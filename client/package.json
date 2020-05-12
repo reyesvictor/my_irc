@@ -34,12 +34,18 @@
     ]
   },
   "devDependencies": {
+    "axios": "^0.19.2",
+    "js-cookie": "^2.2.1",
     "jscookie": "^1.1.0",
     "react-color": "^2.18.1",
+    "react-modal": "^3.11.2",
     "react-redux": "^7.2.0",
     "react-toastify": "^6.0.0-rc.2-1",
     "redux": "^4.0.5",
     "redux-thunk": "^2.3.0",
+    "socket.io-client": "^2.3.0",
+    "socketio": "^1.0.0",
+    "typescript": "^3.8.3",
     "webpack-hot-client": "^4.1.2"
   }
 }

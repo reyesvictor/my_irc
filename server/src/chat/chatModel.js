@@ -1,8 +1,7 @@
 const mongoose = require("mongoose");
 var ObjectId = require('mongodb').ObjectID;
 
-
-const blogSchema = new mongoose.Schema(
+const chatSchema = new mongoose.Schema(
   {
     title: {
       type: String,
@@ -13,25 +12,13 @@ const blogSchema = new mongoose.Schema(
       max: 20,
       required: true,
     },
-    content: {
-      type: String,
-      trim: true,
-      required: true,
-    }, 
-    user_id: {
-      type: ObjectId,
-      required: true,
-    },
-    user_login: {
+    author_login: {
       type: String,
       trim: true,
       required: true,
     },
-    comments: {
-      type: Array,
-    }
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Blog", blogSchema);
+module.exports = mongoose.model("Chat", chatSchema);

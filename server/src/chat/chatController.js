@@ -1,6 +1,4 @@
-const Blog = require("./blogModel");
-const User = require("../user/userModel");
-const Comment = require("./commentModel");
+const Chat = require("./chatModel");
 const jwt = require("jsonwebtoken");
 const path = require("path");
 const dotenv = require('dotenv').config({ path: path.resolve(__dirname, '../../.env') })

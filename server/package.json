@@ -1,0 +1,53 @@
+{
+  "name": "ex_1",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "lint": "eslint .",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
+  },
+  "author": "Victor Reyes",
+  "license": "ISC",
+  "dependencies": {
+    "@sendgrid/mail": "^7.1.0",
+    "body-parser": "^1.19.0",
+    "cookie-parser": "^1.4.5",
+    "cors": "^2.8.5",
+    "ejs": "^3.1.2",
+    "express": "^4.17.1",
+    "express-jwt": "^5.3.3",
+    "express-session": "^1.17.1",
+    "express-validator": "^6.4.1",
+    "install": "^0.13.0",
+    "js-cookie": "^2.2.1",
+    "mongodb": "^3.5.7",
+    "morgan": "^1.10.0",
+    "node-port-check": "^2.0.1",
+    "nodemon": "^2.0.3",
+    "sha1": "^1.1.1"
+  },
+  "devDependencies": {
+    "dotenv": "^8.2.0",
+    "eslint": "^6.8.0",
+    "eslint-plugin-react": "^7.19.0",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^5.9.13",
+    "socket.io": "^2.3.0",
+    "socketio": "^1.0.0",
+    "webpack": "^4.43.0",
+    "webpack-hot-client": "^4.1.2"
+  },
+  "nodemonConfig": {
+    "restartable": "rs",
+    "ignore": [
+      "node_modules/**/node_modules"
+    ],
+    "delay": "2500",
+    "env": {
+      "NODE_ENV": "development",
+      "PORT": 4141
+    }
+  }
+}
