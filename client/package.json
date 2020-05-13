@@ -6,14 +6,12 @@
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
-    "cors": "^2.8.5",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
-    "react-router-dom": "^5.1.2",
     "react-scripts": "3.4.1"
   },
   "scripts": {
-    "start": "PORT=4242 react-scripts start",
+    "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -34,18 +32,14 @@
     ]
   },
   "devDependencies": {
-    "axios": "^0.19.2",
-    "js-cookie": "^2.2.1",
-    "jscookie": "^1.1.0",
-    "react-color": "^2.18.1",
+    "query-string": "^6.12.1",
+    "react-emoji": "^0.5.0",
     "react-modal": "^3.11.2",
-    "react-redux": "^7.2.0",
-    "react-toastify": "^6.0.0-rc.2-1",
-    "redux": "^4.0.5",
-    "redux-thunk": "^2.3.0",
+    "react-router": "^5.2.0",
+    "react-router-dom": "^5.2.0",
+    "react-scroll-to-bottom": "^2.0.0",
+    "react-toastify": "^6.0.2",
     "socket.io-client": "^2.3.0",
-    "socketio": "^1.0.0",
-    "typescript": "^3.8.3",
-    "webpack-hot-client": "^4.1.2"
+    "toastify": "^2.0.0"
   }
 }

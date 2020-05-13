@@ -1,22 +1,13 @@
-import React, { Fragment } from "react";
+import React, { Fragment } from "react"
 import { Link, withRouter } from 'react-router-dom'
-import "react-toastify/dist/ReactToastify.min.css";
+import "react-toastify/dist/ReactToastify.min.css"
 
-const Layout = ({ children, match, history }) => {
-
-  const [values, setValues] = React.useState({
-    search: '',
-  });
-  const { search } = values;
-  const handleChange = title => event => {
-    setValues({ ...values, [title]: event.target.value });
-  };
-
+const Layout = ({ children, match }) => {
   const isActive = path => {
     if (match.path === path) {
-      return { cursor: 'pointer', color: '#000000' };
+      return { cursor: 'pointer', color: '#000000' }
     } else {
-      return { cursor: 'pointer', color: '#ffffff' };
+      return { cursor: 'pointer', color: '#ffffff' }
     }
   }
 
@@ -29,7 +20,7 @@ const Layout = ({ children, match, history }) => {
         <Link to="/chat" className="nav-link" style={isActive('/chat')}>Chat</Link>
       </li>
     </ul>
-  );
+  )
 
 
   return (
@@ -37,9 +28,9 @@ const Layout = ({ children, match, history }) => {
       {nav()}
       <div className="container">{children}</div>
     </Fragment>
-  );
-};
+  )
+}
 
 
 
-export default withRouter(Layout);
+export default withRouter(Layout)

@@ -1,8 +1,5 @@
-import React from "react";
-import ReactDOM from "react-dom";
-import Routes from "./Routes";
+import React from 'react';
+import ReactDOM from 'react-dom';
+import App from './App';
 
-console.log = (msg) => { };
-console.error = (msg) => { };
-
-ReactDOM.render(<Routes />, document.getElementById("root"));
+ReactDOM.render(<App />, document.querySelector('#root'));

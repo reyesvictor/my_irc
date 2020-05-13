@@ -5,7 +5,7 @@ const cors = require('cors')
 const assert = require("assert")
 const path = require("path")
 // ===========Socket Setup============
-const http = require("https")
+const http = require("http")
 const socketio = require("socket.io")
 const server = http.createServer(app)
 const io = socketio(server)
@@ -45,12 +45,13 @@ mongoose
 io.on('connect', (socket) => {
   console.log('User is connected')
 
+  socket.on('join', ({login, chat}) => {
+    console.log(`${login} has left chat room named ${chat}`)
+  })
   socket.on('disconnect', () => {
     console.log('User has left chat room')
   })
 })
-
-
 
 server.listen(process.env.PORT, process.env.HOSTNAME, () => {
   console.log(`Running on port ${process.env.PORT} - ${process.env.NODE_ENV}`)
