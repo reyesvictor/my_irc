@@ -32,6 +32,7 @@ const Chat = ({ location }) => {
     })
 
     return () => {
+      console.log(login, chat)
       socket.emit('disconnect', { login, chat })
       socket.off()
     }

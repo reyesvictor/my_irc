@@ -7,37 +7,12 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.min.css";
 
 const Home = ({ match, location }) => {
-  // const [error, setError] = useState(null);
-  // const [isLoaded, setIsLoaded] = useState(false);
   const [login, setLogin] = useState();
   const [chat, setChat] = useState();
   const [password, setPassword] = useState();
   const [joinModalState, setJoinModalState] = useState(false);
   const [createModalState, setCreateModalState] = useState(false);
 
-  // const [values, setValues] = useState({
-  //   title: "Some Original Title",
-  //   content: "Some interesting content....",
-  //   commentContent: "Some comment...",
-  //   login: match.params.login,
-  //   buttonText: "Submit"
-  // });
-
-  // const { title, content, commentContent, password, user_id, login, buttonText } = values;
-
-  // useEffect(() => {
-  //   fetch(`${process.env.REACT_APP_API}/`)
-  //     .then(res => res.json())
-  //     .then(
-  //       (result) => {
-  //         setIsLoaded(true);
-  //       },
-  //       (error) => {
-  //         setIsLoaded(true);
-  //         setError(error);
-  //       }
-  //     )
-  // }, [])
 
   const joinForm = () => (
     <form>
@@ -110,7 +85,7 @@ const Home = ({ match, location }) => {
             </div>
           </div>
         </div>
-        {eval(`modal('${variable}')`)}
+        {modal(variable)}
       </div>
     </div>
   )

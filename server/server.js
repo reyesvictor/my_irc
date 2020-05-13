@@ -53,8 +53,7 @@ io.on('connect', (socket) => {
   })
 
   socket.on('disconnect', ({ login, chat }) => {
-    console.log(`User has left chat room "${chat}"`)
-    
+    console.log(`User ${login} has left chat room "${chat}"`)
   })
 })
 
