@@ -8,15 +8,25 @@ import ScrollToBottom from 'react-scroll-to-bottom'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.min.css'
 import './chatForm.css'; // Tell webpack that Button.js uses these styles
+import { css } from 'glamor';
+let chatMessages= document.getElementsByClassName('chat-message')
 
+const ROOT_CSS = css({
+  height: 600,
+  width: 400
+});
 let socket
 
 const Chat = ({ location }) => {
+  const [logins, setLogins] = useState([])
   const [login, setLogin] = useState()
   const [chat, setChat] = useState('')
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState([])
   const ENDPOINT = process.env.REACT_APP_API
+
+  // USEREFFECT POST with the chat name in the get to check if it exists. 
+  // If it exists, check if last connection was over 2 weeks ago, if so, delete it and redirect user to Home.js
 
   //For Users
   useEffect(() => {
@@ -32,8 +42,8 @@ const Chat = ({ location }) => {
     })
 
     return () => {
-      console.log(login, chat)
-      socket.emit('disconnect', { login, chat })
+      // socket.emit('deleteUserFromChatList', { login, chat })
+      socket.emit('disconnect')
       socket.off()
     }
   }, [ENDPOINT, location.search])
@@ -43,15 +53,16 @@ const Chat = ({ location }) => {
   useEffect(() => {
     socket.on('message', (message) => {
       setMessages([...messages, message])
+      chatMessages.scrollTop = chatMessages.scrollHeight
     })
   }, [messages])
 
   //Display List Of Users
-  // useEffect(() => {
-  //   socket.on('chatData', (users) => {
-  //     setMessages(users)
-  //   })
-  // }, [users])
+  useEffect(() => {
+    socket.on('chatData', (data) => {
+      setLogins(data.users)
+    })
+  }, [logins])
 
   //function send messages
   const sendMessage = (e) => {
@@ -74,12 +85,12 @@ const Chat = ({ location }) => {
               <ul className="list-unstyled friend-list">
 
                 {/* Variable à modifier par le nom des users connectés */}
-                {messages && messages.length > 0 ?
-                  messages.map(function (message, i) {
+                {logins && logins.length > 0 ?
+                  logins.map(function (login, i) {
                     return <li key={i + '-user'} className="active grey lighten-3 p-2 border border-info">
                       <a href="#" className="d-flex justify-content-between">
                         <div className="text-small text-primary">
-                          <strong>{message.user}</strong>
+                          <strong>{login.login}</strong>
                         </div>
                       </a>
                     </li>
@@ -94,18 +105,16 @@ const Chat = ({ location }) => {
           <div className="col-md-6 col-xl-8 pl-md-3 px-lg-auto px-0">
             <div className="chat-message">
 
-              <ScrollToBottom>
-                <ul className="list-unstyled chat-1 scrollbar-light-blue">
+              <ul className="list-unstyled chat-1 scrollbar-light-blue">
+                <ScrollToBottom>
                   {messages && messages.length > 0 ?
                     messages.map(function (message, i) {
-
-                      return <li key={i + "-message"} className={message.user === login.trim().toLowerCase() ?
-                        "text-right mb-1 mr-2 border pr-3 bg-info text-white rounded-lg float-right"
-                        :
-                        "d-flex justify-content-between mb-1 pr-3 border bg-light text-black rounded-lg"
-                      }
-                        style={{ width: "fit-content" }}>
-                        <div className="chat-body white p-1 pb-3 ml-3 z-depth-1" >
+                      return <li key={i + "-message"} className={getClass1(message)} style={{ width: 100 + '%', height: 90 + 'px' }}>
+                        <div className={message.user === login.trim().toLowerCase() ?
+                          "chat-body white p-1 pb-3 pl-2 pr-2  ml-3 z-depth-1 bg-dark text-white border rounded-lg"
+                          :
+                          "chat-body white p-1 pb-3 pl-2 pr-2 ml-3 z-depth-1 bg-light text-black border rounded-lg"
+                        } style={{ width: "fit-content" }}>
                           <div className="header" style={{ height: 10 + 'px' }}>
                             <strong className="primary-font">{message.user}</strong>
                             {/* <small className="pull-right text-muted"><i className="far fa-clock"></i> 12 mins ago</small> */}
@@ -118,8 +127,8 @@ const Chat = ({ location }) => {
                     })
                     : null
                   }
-                </ul>
-              </ScrollToBottom>
+                </ScrollToBottom>
+              </ul>
 
               <div className="white">
                 <div className="form-group basic-textarea">
@@ -128,7 +137,7 @@ const Chat = ({ location }) => {
                     className="form-control pl-2 my-0" id="exampleFormControlTextarea2" rows="3" placeholder="Enter your message"></textarea>
                 </div>
               </div>
-              <button type="button" className="btn btn-outline-pink btn-rounded btn-sm waves-effect waves-dark float-right">Send</button>
+              {/* <button type="button" className="btn btn-outline-pink btn-rounded btn-sm waves-effect waves-dark float-right">Send</button> */}
             </div>
           </div >
         </div >
@@ -136,6 +145,14 @@ const Chat = ({ location }) => {
     </div >
   )
 
+
+  const getClass1 = (message) => {
+    if (message.user === login.trim().toLowerCase()) {
+      return "d-flex flex-row-reverse justify-content-between mb-1 pr-3"
+    } else {
+      return "d-flex justify-content-between mb-1 pr-3"
+    }
+  }
 
 
   return (

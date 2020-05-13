@@ -3,20 +3,23 @@ var ObjectId = require('mongodb').ObjectID;
 
 const chatSchema = new mongoose.Schema(
   {
-    title: {
+    chat: {
       type: String,
       trim: true,
       unique: true,
-      required: true,
+      // required: true,
       min: 5,
-      max: 20,
-      required: true,
+      max: 20
     },
     author_password: {
       type: String,
       trim: true,
       required: true,
     },
+    last_connection: {
+      type: Date,
+      default: Date.now
+    }
   },
   { timestamps: true } // last connection
 );

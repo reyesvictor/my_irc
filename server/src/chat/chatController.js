@@ -6,26 +6,27 @@
 const users = []
 const arr = ['chocolat', 'café', 'caramel']
 
-const addUser = ({id, login, chat}) => { 
+const addUser = ({ id, login, chat }) => {
   login = login.trim().toLowerCase();
   chat = chat.trim().toLowerCase();
 
   const existingUser = users.find((user) => user.chat === chat && user.login === login)
   if (existingUser) {
-    return {error:'Login is taken'}
+    return { error: 'Login is taken' }
   }
 
-  const user = {id, login, chat}
+  const user = { id, login, chat }
   console.log('=======user push========', user, users)
   users.push(user)
   console.log('=======users after push========', users, arr)
-  return {user}
+  return { user }
 }
 
-const deleteUser = (id) => { 
-  const index = users.findIndex((user) => users.id === id )
-  if(index !== -1) {
-    return users.splice(index,1)[0]
+const deleteUserFromChatList = (id) => {
+  const index = users.findIndex((user) => user.id === id)
+  if (index !== -1) {
+    users.splice(index, 1)[0]
+    return users
   }
 }
 
@@ -34,6 +35,9 @@ const getUser = (id) => {
   return users.filter((user) => user.id === id)
 }
 
-const getLoginsInChat = (chat) => { users.filter((user) => user.chat === chat) }
+const getLoginsInChat = (chat) => {
+  console.log(chat, arr)
+  return users.filter((user) => user.chat === chat)
+}
 
-module.exports = {addUser, deleteUser, getUser, getLoginsInChat }
+module.exports = { addUser, deleteUserFromChatList, getUser, getLoginsInChat }

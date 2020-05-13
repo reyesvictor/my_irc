@@ -4,15 +4,49 @@ import Modal from "react-modal";
 import ReactDOM from "react-dom";
 import { Link, Redirect } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
+import { Button } from 'reactstrap'
 import "react-toastify/dist/ReactToastify.min.css";
+import axios from 'axios'
 
 const Home = ({ match, location }) => {
+  const [isLoaded, setIsLoaded] = React.useState(false);
+  const [chats, setChats] = useState();
   const [login, setLogin] = useState();
   const [chat, setChat] = useState();
   const [password, setPassword] = useState();
   const [joinModalState, setJoinModalState] = useState(false);
   const [createModalState, setCreateModalState] = useState(false);
 
+  useEffect(() => {
+    fetch(`${process.env.REACT_APP_API}/chat/`)
+      .then(res => res.json())
+      .then(
+        async (result) => {
+          setIsLoaded(true);
+          await setChats(result);
+        }
+      )
+  }, [])
+
+  const onSubmit = () => {
+    // headers 
+    const config = {
+      headers: {
+        "Content-type": "application/json"
+      }
+    }
+
+    //request info
+    const body = JSON.stringify({ chat, password })
+
+    axios.post('http://127.0.0.1:4141/chat', body, config)
+      .then(res => {
+        window.location = `/chat?login=${login}&chat=${chat}`
+      })
+      .catch(error => {
+        toast.error(error.response.data.error)
+      })
+  }
 
   const joinForm = () => (
     <form>
@@ -22,9 +56,8 @@ const Home = ({ match, location }) => {
         <small id="emailHelp" className="form-text text-muted">Choose wisely young kek.</small>
       </div>
       <select className="form-control" onChange={e => e.target.value && e.target.value !== "" ? setChat(e.target.value) : null}>
-        <option>Default select</option>
-        <option value="BigPP">Big PP</option>
-        <option value="SmallPP">Small PP</option>
+        <option value="">Choose one</option>
+        {chats ? chats.map((singleChat) => <option key={singleChat.chat} value={singleChat.chat}>{singleChat.chat}</option>) : null}
       </select>
       <Link onClick={e => (login && chat ? null : e.preventDefault())} to={`/chat?login=${login}&chat=${chat}`}>
         <button className="btn btn-success mt-3" onClick={() => setJoinModalState(true)}>Join</button>
@@ -41,17 +74,17 @@ const Home = ({ match, location }) => {
       </div>
       <div className="form-group">
         <label htmlFor="exampleInputEmail1">Room Name</label>
-        <input type="text" className="form-control" id="exampleInputEmail1" aria-describedby="roomHelp" placeholder="Enter Room Name" onChange={e => setChat(e.target.value)} />
+        <input type="text" className="form-control" id="exampleInputEmail1" aria-describedby="roomHelp" name="title" placeholder="Enter Room Name" onChange={e => setChat(e.target.value)} />
         <small id="emailHelp" className="form-text text-muted">Gas Chamber is not allowed as a name.</small>
       </div>
       <div className="form-group">
         <label htmlFor="exampleInputPassword1">Password</label>
-        <input type="password" className="form-control" id="exampleInputPassword1" placeholder="Enter Complex Password" onChange={e => setPassword(e.target.value)} />
+        <input type="password" className="form-control" id="exampleInputPassword1" placeholder="Enter Complex Password" name="password" onChange={e => setPassword(e.target.value)} />
         <small id="emailHelp" className="form-text text-muted">This password is crucial, only with the password you can delete the room.</small>
       </div>
-      <Link onClick={e => (login && chat && password ? null : e.preventDefault())} to={`/chat?login=${login}&chat=${chat}`}>
-        <button className="btn btn-success mr-2" onClick={() => setCreateModalState(true)}>Create</button>
-      </Link>
+      <Button onClick={function (e) { if (!login && !chat && !password) e.preventDefault(); onSubmit() }}>
+        Create
+      </Button>
     </form>
   )
 
@@ -90,7 +123,6 @@ const Home = ({ match, location }) => {
     </div>
   )
 
-
   return (
     <Layout>
       <ToastContainer />
@@ -99,7 +131,6 @@ const Home = ({ match, location }) => {
       {comp('Create')}
     </Layout>
   );
-
 }
 
 export default Home;
