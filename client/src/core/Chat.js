@@ -61,6 +61,13 @@ const Chat = ({ location }) => {
       }
     })
 
+    socket.on('changeChatName', (newChat) => {
+      if (newChat == chat) {
+        setChat(newChat)
+      }
+    })
+
+
     return () => {
       // socket.emit('deleteUserFromChatList', { login, chat })
       socket.emit('disconnect')
@@ -98,7 +105,6 @@ const Chat = ({ location }) => {
   }
 
   const changeChatName = () => {
-
     const config = {
       headers: {
         "Content-type": "application/json"

@@ -84,6 +84,7 @@ router.post('/changename', (req, res) => {
                 if (chat) {
                     chat.chat = newchat
                     chat.save()
+                    io.emit('changeChatName', { chat: user.chat })
                     return res.status(200).json({ chat: chat.chat })
                 }
                 else {
