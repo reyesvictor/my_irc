@@ -44,7 +44,7 @@ io.on('connect', (socket) => {
     if (error) return callback({ error }) //if addUser find an error, we return and stop the function
     console.log('======user created======', user)
     socket.emit('message', { chatName:user.chat, user: 'admin', text: `${user.login}, welcome to the room ${user.chat}` })
-    socket.broadcast.to(user.chat).emit('message', { user: 'admin', text: `${user.login} has joined` }) //broadcast sends a message to everyone in the room except the user
+    socket.broadcast.to(user.chat).emit('message', {  chatName:user.chat, user: 'admin', text: `${user.login} has joined` }) //broadcast sends a message to everyone in the room except the user
     socket.join(user.chat)
     io.emit('chatData', { chat: user.chat, users: getLoginsInChat(user.chat) })
     callback() //so we can work after in react

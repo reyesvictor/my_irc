@@ -57,7 +57,6 @@ router.post('/admin', (req, res) => {
         Chat.findOne({ chat })
             .then(chat => {
                 if (chat) {
-                    console.log(chat.author_password, sha1(adminpw), adminpw)
                     if (chat.author_password == sha1(adminpw)) {
                         return res.status(200).json({ adminaccess: true })
                     }
@@ -72,10 +71,47 @@ router.post('/admin', (req, res) => {
     }
 })
 
-router.post('changename', (req, res) => {
+router.post('/changename', (req, res) => {
+
+    const { newchat, chat } = req.body
+
+    if (!newchat || !chat) {
+        return res.status(400).json({ error: 'Please enter all fields' })
+    }
+    else {
+        Chat.findOne({ chat })
+            .then(chat => {
+                if (chat) {
+                    chat.chat = newchat
+                    chat.save()
+                    return res.status(200).json({ chat: chat.chat })
+                }
+                else {
+                    return res.status(400).json({ error: 'The chat room does not exist' })
+                }
+            })
+    }
+})
+
+router.post('/deletechat', (req, res) => {
 
     const { chat } = req.body
 
+    if (!chat) {
+        return res.status(400).json({ error: 'Please enter all fields' })
+    }
+    else {
+        Chat.findOne({ chat })
+            .then(chat => {
+                if (chat) {
+                    chat.remove()
+                    return res.status(200).json({ msg: 'The chat was successfully deleted' })
+                }
+                else {
+                    return res.status(400).json({ error: 'The chat room does not exist' })
+                }
+            })
+    }
 })
 
 module.exports = router

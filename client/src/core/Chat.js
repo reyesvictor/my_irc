@@ -18,7 +18,8 @@ const ROOT_CSS = css({
 let socket
 
 const Chat = ({ location }) => {
-  const [adminpw, setAdminpw] = useState()
+  const [adminpw, setAdminpw] = useState()  
+  const [newchat, setNewchat] = useState()
   const [adminaccess, setAdminaccess] = useState()
   const [logins, setLogins] = useState([])
   const [login, setLogin] = useState()
@@ -96,15 +97,59 @@ const Chat = ({ location }) => {
       })
   }
 
+  const changeChatName = () => {
+
+    const config = {
+      headers: {
+        "Content-type": "application/json"
+      }
+    }
+
+    //request info
+    const body = JSON.stringify({ newchat, chat })
+
+    axios.post('http://127.0.0.1:4141/chat/changename', body, config)
+      .then(res => {
+        setChat(res.data.chat)
+        // CHANGE THE NAME OF THE ROOM OF EACH PERSON CONNECTED TO IT IN SOCKET.IO TO THE NEW ROOM
+        // socket.io (everybodyinthe OLDNAME chatroom.map -> OLDNAME = NEWNAME)
+      })
+      .catch(error => {
+        toast.error(error.response.data.error, { position: 'top-left' })
+      })
+  }
+
+  const deleteChatroom = () => {
+
+    const config = {
+      headers: {
+        "Content-type": "application/json"
+      }
+    }
+
+    //request info
+    const body = JSON.stringify({ chat })
+
+    axios.post('http://127.0.0.1:4141/chat/deletechat', body, config)
+      .then(res => {
+        toast.success(res.data.msg)
+        // DISCONNECT EVERYONE THAT WAS IN THIS ROOM AND SEND THEM TO / (home.js)
+        window.location = `/`
+      })
+      .catch(error => {
+        toast.error(error.response.data.error, { position: 'top-left' })
+      })
+  }
+
   const adminAccess = () => (
     <div>
       {adminaccess ?
         <div className="m-1 p-1" >
           <div className="m-1 p-1 card" style={{ width: 200 + 'px' }}>
-            <label htmlFor="adminpw">New name:</label><br></br>
-            <input onChange={e => setAdminpw(e.target.value)} id="adminpw" type="password"></input><br></br>
-            <button className="btn btn-primary p-2 m-2" onClick={() => checkAdmin()}>Change Name</button>
-            <button className="btn btn-danger p-2 m-2" onClick={() => checkAdmin()}>Delete Chatroom</button>
+            <label htmlFor="newchat">New name:</label><br></br>
+            <input onChange={e => setNewchat(e.target.value)} id="newchat" type="text"></input><br></br>
+            <button className="btn btn-primary p-2 m-2" onClick={() => changeChatName()}>Change Name</button>
+            <button className="btn btn-danger p-2 m-2" onClick={() => deleteChatroom()}>Delete Chatroom</button>
           </div>
         </div>
         :
