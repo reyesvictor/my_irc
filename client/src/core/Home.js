@@ -1,5 +1,6 @@
 import React, { useState, useEffect, Fragment } from "react";
 import Layout from "./Layout";
+import io from 'socket.io-client'
 import Modal from "react-modal";
 import ReactDOM from "react-dom";
 import { Link, Redirect } from "react-router-dom";
@@ -7,6 +8,8 @@ import { ToastContainer, toast } from "react-toastify";
 import { Button } from 'reactstrap'
 import "react-toastify/dist/ReactToastify.min.css";
 import axios from 'axios'
+
+let socket
 
 const Home = ({ match, location }) => {
   const [isLoaded, setIsLoaded] = React.useState(false);
@@ -16,6 +19,7 @@ const Home = ({ match, location }) => {
   const [password, setPassword] = useState();
   const [joinModalState, setJoinModalState] = useState(false);
   const [createModalState, setCreateModalState] = useState(false);
+  const ENDPOINT = process.env.REACT_APP_API
 
   useEffect(() => {
     fetch(`${process.env.REACT_APP_API}/chat/`)
@@ -26,6 +30,13 @@ const Home = ({ match, location }) => {
           await setChats(result);
         }
       )
+
+    socket = io(ENDPOINT)
+
+    return () => {
+      socket.off()
+    }
+
   }, [])
 
   const onSubmit = () => {
@@ -49,6 +60,20 @@ const Home = ({ match, location }) => {
       })
   }
 
+  const checkIfUserExists = () => {
+    return new Promise(resolve => {
+      socket.emit('doesUserExist', { login, chat },
+        function (data) {
+          resolve(data)
+        }
+      )
+    })
+  }
+
+  const redirectIfValid = () => {
+    window.location = `/chat?login=${login}&chat=${chat}`
+  }
+
   const joinForm = () => (
     <form>
       <div className="form-group">
@@ -60,9 +85,19 @@ const Home = ({ match, location }) => {
         <option value="">Choose one</option>
         {chats ? chats.map((singleChat) => <option key={singleChat.chat} value={singleChat.chat}>{singleChat.chat}</option>) : null}
       </select>
-      <Link onClick={e => (login && chat ? null : e.preventDefault())} to={`/chat?login=${login}&chat=${chat}`}>
-        <button className="btn btn-success mt-3" onClick={() => setJoinModalState(true)}>Join</button>
-      </Link>
+      <span className="btn btn-success mt-2" onClick={
+        async function (e) {
+          const canIFinallyGoIN = await checkIfUserExists()
+          if (login && chat && canIFinallyGoIN) {
+            redirectIfValid()
+          }
+          else {
+            toast.error("Somebody already took that name", { position: 'top-center' })
+          }
+        }}
+      >
+        Join
+      </span>
     </form>
   )
 

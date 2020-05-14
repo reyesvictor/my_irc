@@ -61,8 +61,9 @@ const Chat = ({ location }) => {
       }
     })
 
-    socket.on('changeChatName', (newChat) => {
-      if (newChat == chat) {
+    socket.on('changeChatNameInPage', (data) => {
+      const {oldChat, newChat} = data
+      if (oldChat == chat) {
         setChat(newChat)
       }
     })
@@ -91,10 +92,8 @@ const Chat = ({ location }) => {
         "Content-type": "application/json"
       }
     }
-
     //request info
     const body = JSON.stringify({ adminpw, chat })
-
     axios.post('http://127.0.0.1:4141/chat/admin', body, config)
       .then(res => {
         setAdminaccess(res.data.adminaccess)
@@ -110,14 +109,13 @@ const Chat = ({ location }) => {
         "Content-type": "application/json"
       }
     }
-
     //request info
     const body = JSON.stringify({ newchat, chat })
-
     axios.post('http://127.0.0.1:4141/chat/changename', body, config)
       .then(res => {
-        setChat(res.data.chat)
+        setChat(res.data)
         // CHANGE THE NAME OF THE ROOM OF EACH PERSON CONNECTED TO IT IN SOCKET.IO TO THE NEW ROOM
+        socket.emit('changeChatNameInServer', res.data)
         // socket.io (everybodyinthe OLDNAME chatroom.map -> OLDNAME = NEWNAME)
       })
       .catch(error => {
@@ -125,8 +123,8 @@ const Chat = ({ location }) => {
       })
   }
 
-  const deleteChatroom = () => {
 
+  const deleteChatroom = () => {
     const config = {
       headers: {
         "Content-type": "application/json"

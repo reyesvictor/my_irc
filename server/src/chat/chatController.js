@@ -1,8 +1,3 @@
-// const Chat = require("./chatModel")
-// const jwt = require("jsonwebtoken")
-// const path = require("path")
-// const dotenv = require('dotenv').config({ path: path.resolve(__dirname, '../../.env') })
-// var ObjectId = require('mongoose').Types.ObjectId
 const users = {}
 const arr = ['chocolat', 'café', 'caramel']
 
@@ -40,15 +35,18 @@ const getLoginsInChat = (chat) => {
   //get id of all users connected to a chatroom
   list = []
   loginslist = []
-  console.log(`=====verify foreach users room ${chat}=====`, Object.keys(users), users[chat])
-  users[chat].forEach(user => { //users['chatroom name']
-    // console.log(user.login)
-    list.push(user.id)
-    loginslist.push(user.login)
-  })
-  console.log(`=====list of logins of all users connected to ${chat}`, loginslist)
-  console.log(`=====list of id of all users connected to ${chat}`, list)
-  return loginslist;
+  // console.log(`=====verify foreach users room ${chat}=====`, Object.keys(users), users[chat])
+  if (users && chat && users[chat]) {
+    users[chat].forEach(user => { //users['chatroom name']
+      // console.log(user.login)
+      list.push(user.id)
+      loginslist.push(user.login)
+    })
+    console.log(`=====list of logins of all users connected to ${chat}`, loginslist)
+    console.log(`=====list of id of all users connected to ${chat}`, list)
+    return loginslist;
+  }
+  else return false
 }
 
 const getLoginsList = (chat) => {
@@ -59,4 +57,10 @@ const getLoginsList = (chat) => {
   return loginslist
 }
 
-module.exports = { addUser, deleteUserFromChatList, getUser, getLoginsInChat }
+const changeChatName = (oldChat, newChat) => {
+  users[newChat] = users[oldChat] //create new room with new name
+  delete users[oldChat] //delete room
+  console.log(`NAME CHATROOM CHANGED, FROM ==> ${oldChat} TO ===> ${newChat}`)
+}
+
+module.exports = { addUser, deleteUserFromChatList, getUser, getLoginsInChat, changeChatName }

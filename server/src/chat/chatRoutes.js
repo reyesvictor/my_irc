@@ -74,6 +74,7 @@ router.post('/admin', (req, res) => {
 router.post('/changename', (req, res) => {
 
     const { newchat, chat } = req.body
+    const oldChat = chat
 
     if (!newchat || !chat) {
         return res.status(400).json({ error: 'Please enter all fields' })
@@ -82,10 +83,8 @@ router.post('/changename', (req, res) => {
         Chat.findOne({ chat })
             .then(chat => {
                 if (chat) {
-                    chat.chat = newchat
                     chat.save()
-                    io.emit('changeChatName', { chat: user.chat })
-                    return res.status(200).json({ chat: chat.chat })
+                    return res.status(200).json({ newChat:newchat, oldChat:oldChat })
                 }
                 else {
                     return res.status(400).json({ error: 'The chat room does not exist' })
