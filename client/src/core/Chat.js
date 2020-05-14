@@ -44,14 +44,20 @@ const Chat = ({ location }) => {
     })
 
     //For Messages
-    socket.on('message', (message) => {
-      const chatMessages = document.querySelector('.chat-1')
-      setMessages(messages => [...messages, message])
-      chatMessages.scrollTop = chatMessages.scrollHeight
+    socket.on('message', (data) => {
+      const { chatName, user, text } = data
+      const message = { user, text }
+      if (chatName == chat) {
+        setMessages(messages => [...messages, message])
+        const chatMessages = document.querySelector('.chat-1')
+        chatMessages.scrollTop = chatMessages.scrollHeight
+      }
     })
 
     socket.on('chatData', (data) => {
-      setLogins(data.users)
+      if (data.chat == chat) {
+        setLogins(data.users)
+      }
     })
 
     return () => {
@@ -121,12 +127,13 @@ const Chat = ({ location }) => {
               <ul className="list-unstyled friend-list">
 
                 {/* Variable à modifier par le nom des users connectés */}
+                {console.log(logins)}
                 {logins && logins.length > 0 ?
                   logins.map(function (login, i) {
                     return <li key={i + '-user'} className="active grey lighten-3 p-2 border border-info">
                       <a href="#" className="d-flex justify-content-between">
                         <div className="text-small text-primary">
-                          <strong>{login.login}</strong>
+                          <strong>{login}</strong>
                         </div>
                       </a>
                     </li>
