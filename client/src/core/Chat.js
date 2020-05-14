@@ -7,17 +7,19 @@ import { Link, Redirect } from 'react-router-dom'
 import ScrollToBottom from 'react-scroll-to-bottom'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.min.css'
-import './chatForm.css'; // Tell webpack that Button.js uses these styles
-import { css } from 'glamor';
-let chatMessages= document.getElementsByClassName('chat-message')
+import './chatForm.css' // Tell webpack that Button.js uses these styles
+import { css } from 'glamor'
+import axios from 'axios'
 
 const ROOT_CSS = css({
   height: 600,
   width: 400
-});
+})
 let socket
 
 const Chat = ({ location }) => {
+  const [adminpw, setAdminpw] = useState()
+  const [adminaccess, setAdminaccess] = useState()
   const [logins, setLogins] = useState([])
   const [login, setLogin] = useState()
   const [chat, setChat] = useState('')
@@ -41,6 +43,17 @@ const Chat = ({ location }) => {
     socket.emit('join', { login, chat }, () => {
     })
 
+    //For Messages
+    socket.on('message', (message) => {
+      const chatMessages = document.querySelector('.chat-1')
+      setMessages(messages => [...messages, message])
+      chatMessages.scrollTop = chatMessages.scrollHeight
+    })
+
+    socket.on('chatData', (data) => {
+      setLogins(data.users)
+    })
+
     return () => {
       // socket.emit('deleteUserFromChatList', { login, chat })
       socket.emit('disconnect')
@@ -49,31 +62,54 @@ const Chat = ({ location }) => {
   }, [ENDPOINT, location.search])
 
 
-  //For Messages
-  useEffect(() => {
-    socket.on('message', (message) => {
-      setMessages([...messages, message])
-      chatMessages.scrollTop = chatMessages.scrollHeight
-    })
-  }, [messages])
-
-  //Display List Of Users
-  useEffect(() => {
-    socket.on('chatData', (data) => {
-      setLogins(data.users)
-    })
-  }, [logins])
-
   //function send messages
   const sendMessage = (e) => {
     e.preventDefault()
-    if (message) {
+    if (document.querySelector('#messageBox').value) {
       console.log('======Inside Send Message=====')
-      socket.emit('sendMessage', message, () => setMessage(''))
+      socket.emit('sendMessage', document.getElementById('messageBox').value, () => document.querySelector('#messageBox').value = '')
     }
   }
 
-  // console.log(message, messages);
+  const checkAdmin = () => {
+    const config = {
+      headers: {
+        "Content-type": "application/json"
+      }
+    }
+
+    //request info
+    const body = JSON.stringify({ adminpw, chat })
+
+    axios.post('http://127.0.0.1:4141/chat/admin', body, config)
+      .then(res => {
+        setAdminaccess(res.data.adminaccess)
+      })
+      .catch(error => {
+        toast.error(error.response.data.error, { position: 'top-left' })
+      })
+  }
+
+  const adminAccess = () => (
+    <div>
+      {adminaccess ?
+        <div className="m-1 p-1" >
+          <div className="m-1 p-1 card" style={{ width: 200 + 'px' }}>
+            <label htmlFor="adminpw">New name:</label><br></br>
+            <input onChange={e => setAdminpw(e.target.value)} id="adminpw" type="password"></input><br></br>
+            <button className="btn btn-primary p-2 m-2" onClick={() => checkAdmin()}>Change Name</button>
+            <button className="btn btn-danger p-2 m-2" onClick={() => checkAdmin()}>Delete Chatroom</button>
+          </div>
+        </div>
+        :
+        <div className="m-2 p-2 card" style={{ width: 200 + 'px' }}>
+          <label htmlFor="adminpw">Access code:</label><br></br>
+          <input className="mb-2" onChange={e => setAdminpw(e.target.value)} id="adminpw" type="password"></input><br></br>
+          <button className="m-2 p-2" className="btn btn-primary" onClick={() => checkAdmin()}>Admin access</button>
+        </div>
+      }
+    </div>
+  )
 
   const chatForm = () => (
     <div className="card rare-wind-gradient chat-room">
@@ -106,43 +142,45 @@ const Chat = ({ location }) => {
             <div className="chat-message">
 
               <ul className="list-unstyled chat-1 scrollbar-light-blue">
-                <ScrollToBottom>
-                  {messages && messages.length > 0 ?
-                    messages.map(function (message, i) {
-                      return <li key={i + "-message"} className={getClass1(message)} style={{ width: 100 + '%', height: 90 + 'px' }}>
-                        <div className={message.user === login.trim().toLowerCase() ?
-                          "chat-body white p-1 pb-3 pl-2 pr-2  ml-3 z-depth-1 bg-dark text-white border rounded-lg"
-                          :
-                          "chat-body white p-1 pb-3 pl-2 pr-2 ml-3 z-depth-1 bg-light text-black border rounded-lg"
-                        } style={{ width: "fit-content" }}>
-                          <div className="header" style={{ height: 10 + 'px' }}>
-                            <strong className="primary-font">{message.user}</strong>
-                            {/* <small className="pull-right text-muted"><i className="far fa-clock"></i> 12 mins ago</small> */}
-                          </div>
-                          <hr className="w-100" />
-                          <p className="mb-0">
-                            {message.text}</p>
+                {/* <ScrollToBottom> */}
+                {console.log("_____________________________________")}
+                {messages && messages.length > 0 ?
+                  messages.map(function (message, i) {
+                    return <li key={i + "-message"} className={getClass1(message)} style={{ width: 100 + '%', height: 90 + 'px' }}>
+                      <div className={message.user === login.trim().toLowerCase() ?
+                        "chat-body white p-1 pb-3 pl-2 pr-2  ml-3 z-depth-1 bg-dark text-white border rounded-lg"
+                        :
+                        "chat-body white p-1 pb-3 pl-2 pr-2 ml-3 z-depth-1 bg-light text-black border rounded-lg"
+                      } style={{ width: "fit-content" }}>
+                        <div className="header" style={{ height: 10 + 'px' }}>
+                          <strong className="primary-font">{message.user}</strong>
+                          {/* <small className="pull-right text-muted"><i className="far fa-clock"></i> 12 mins ago</small> */}
                         </div>
-                      </li>
-                    })
-                    : null
-                  }
-                </ScrollToBottom>
+                        <hr className="w-100" />
+                        <p className="mb-0">
+                          {message.text}</p>
+                      </div>
+                    </li>
+                  })
+                  : null
+                }
+                {/* </ScrollToBottom> */}
               </ul>
 
               <div className="white">
                 <div className="form-group basic-textarea">
                   {/* Variable Message Ici */}
-                  <textarea value={message} onChange={e => setMessage(e.target.value)} onKeyPress={e => e.key === 'Enter' ? sendMessage(e) : null}
-                    className="form-control pl-2 my-0" id="exampleFormControlTextarea2" rows="3" placeholder="Enter your message"></textarea>
+                  {/* onChange={e => { setMessage(e.target.value) }} */}
+                  <textarea id="messageBox" onKeyPress={e => e.key === 'Enter' ? sendMessage(e) : null}
+                    className="form-control pl-2 my-0" rows="3" placeholder="Enter your message"></textarea>
                 </div>
               </div>
               {/* <button type="button" className="btn btn-outline-pink btn-rounded btn-sm waves-effect waves-dark float-right">Send</button> */}
             </div>
-          </div >
-        </div >
-      </div >
-    </div >
+          </div>
+        </div>
+      </div>
+    </div>
   )
 
 
@@ -159,10 +197,12 @@ const Chat = ({ location }) => {
     <Layout>
       <ToastContainer />
       <div className='row'>
+        {/* {console.log('loop')} */}
         <div className='mx-auto col-12'>
           <div className='card mt-2'>
-            <div className='card-body'>
-              <h1 className='card-title p-5 text-center'>{chat} Chat Room</h1>
+            <div className='card'>
+              <h1 className='card-title p-1 text-center'>'{chat}' Chat Room</h1>
+              {adminAccess()}
             </div>
           </div>
           {chatForm()}
@@ -170,7 +210,6 @@ const Chat = ({ location }) => {
       </div>
     </Layout>
   )
-
 }
 
 export default Chat

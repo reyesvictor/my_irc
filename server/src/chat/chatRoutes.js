@@ -1,5 +1,5 @@
-const express = require("express");
-const router = express.Router();
+const express = require("express")
+const router = express.Router()
 const Chat = require('./chatModel')
 const sha1 = require('sha1')
 
@@ -27,12 +27,6 @@ router.post('/', (req, res) => {
                     console.log(newChat)
                     newChat.save()
                         .then(chat => {
-                            // res.json({
-                            //     chat: {
-                            //         chat: chat.chat,
-                            //         author_password: chat.author_password
-                            //     }
-                            // })
                             return res.status(200).json({ success: 'Chat was successfully created' })
                         })
                 }
@@ -52,4 +46,36 @@ router.get('/', (req, res) => {
         })
 })
 
-module.exports = router;
+router.post('/admin', (req, res) => {
+
+    const { adminpw, chat } = req.body
+
+    if (!adminpw || !chat) {
+        return res.status(400).json({ error: 'Please enter all fields' })
+    }
+    else {
+        Chat.findOne({ chat })
+            .then(chat => {
+                if (chat) {
+                    console.log(chat.author_password, sha1(adminpw), adminpw)
+                    if (chat.author_password == sha1(adminpw)) {
+                        return res.status(200).json({ adminaccess: true })
+                    }
+                    else {
+                        return res.status(400).json({ error: 'Incorrect access code' })
+                    }
+                }
+                else {
+                    return res.status(400).json({ error: 'The chat room does not exist' })
+                }
+            })
+    }
+})
+
+router.post('changename', (req, res) => {
+
+    const { chat } = req.body
+
+})
+
+module.exports = router

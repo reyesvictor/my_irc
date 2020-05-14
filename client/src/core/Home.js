@@ -38,6 +38,7 @@ const Home = ({ match, location }) => {
 
     //request info
     const body = JSON.stringify({ chat, password })
+    console.log("test")
 
     axios.post('http://127.0.0.1:4141/chat', body, config)
       .then(res => {

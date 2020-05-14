@@ -38,6 +38,7 @@
     "react-modal": "^3.11.2",
     "react-router": "^5.2.0",
     "react-router-dom": "^5.2.0",
+    "react-scroll": "^1.7.16",
     "react-scroll-to-bottom": "^2.0.0",
     "react-toastify": "^6.0.2",
     "reactstrap": "^8.4.1",
