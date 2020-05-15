@@ -14,7 +14,7 @@ const Layout = ({ children, match }) => {
   const nav = () => (
     <ul className="nav nav-tabs bg-primary">
       <li className="nav-item">
-        <Link to="/" className="nav-link" style={isActive('/')}>Home</Link>
+        <a href="/" className="nav-link" style={isActive('/')}>Home</a>
       </li>
       <li className="nav-item">
         <Link to="/chat" className="nav-link" style={isActive('/chat')}>Chat</Link>

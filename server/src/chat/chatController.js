@@ -1,9 +1,10 @@
 const util = require('util')
 let users = {}
-users['default'] = []
+const nameDefault = 'ilikebigsockets'
+users[nameDefault] = []
 const chatPasswords = {}
-chatPasswords['default'] = []
-chatPasswords['default'].push('root')
+chatPasswords[nameDefault] = []
+chatPasswords[nameDefault].push('root')
 
 const arr = ['chocolat', 'café', 'caramel']
 
@@ -23,8 +24,8 @@ const addUser = ({ id, login, chat }) => {
 
 const createChat = ({ password, chat }) => {
   // if (!Object.keys(users).includes(chat)) { // if chat name doesnt exist in array then create 
-  if ( Object.keys(users).includes(chat) ) {
-return true;
+  if (Object.keys(users).includes(chat)) {
+    return true;
   } else {
     users[chat] = []
     chatPasswords[chat] = []
@@ -86,6 +87,13 @@ const getLoginsList = (chat) => {
   return loginslist
 }
 
+const deleteChat = (chat) => {
+  // console.log('\n\nverifyin channel', chat.chat, users[chat])
+  if ( !users[chat.chat] ) return true
+  delete users[chat.chat] //delete room
+  delete chatPasswords[chat.chat] //delete room
+}
+
 const getChats = () => {
   const roomlist = []
   Object.keys(users).forEach(room => {
@@ -125,5 +133,6 @@ const changeChatName = (oldChat, newChat) => {
 module.exports = {
   addUser, deleteUserFromChatList, getUser,
   getLoginsInChat, changeChatName, getChats,
-  verifyChatPassword, verifyIfChatExists, createChat
+  verifyChatPassword, verifyIfChatExists, createChat,
+  deleteChat,
 }

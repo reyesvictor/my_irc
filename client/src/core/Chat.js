@@ -80,6 +80,14 @@ const Chat = ({ location }) => {
           }
         })
 
+        socket.on('redirectToIndex', (data) => {
+          const { oldChat } = data
+          console.log(data, chat)
+          if (oldChat == chat) {
+            window.location = `/`
+          }
+        })
+
         return () => {
           // socket.emit('deleteUserFromChatList', { login, chat })
           socket.emit('disconnect')
@@ -128,27 +136,15 @@ const Chat = ({ location }) => {
     }
   }
 
-
   const deleteChatroom = () => {
-    const config = {
-      headers: {
-        "Content-type": "application/json"
+    socket.emit('deleteChat', { chat }, function (isChatDeleted) {
+      console.log('deleteChat', isChatDeleted, 'check')
+      if (isChatDeleted) { //true == no bcoz it doesnt exist
+        toast.error('Chat doesnt exist !', { position: 'top-left' })
       }
-    }
-
-    //request info
-    const body = JSON.stringify({ chat })
-
-    axios.post('http://127.0.0.1:4141/chat/deletechat', body, config)
-      .then(res => {
-        toast.success(res.data.msg)
-        // DISCONNECT EVERYONE THAT WAS IN THIS ROOM AND SEND THEM TO / (home.js)
-        window.location = `/`
-      })
-      .catch(error => {
-        toast.error(error.response.data.error, { position: 'top-left' })
-      })
+    })
   }
+
 
   const adminAccess = () => (
     <div>

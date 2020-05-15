@@ -10,7 +10,9 @@ const socketio = require("socket.io")
 const server = http.createServer(app)
 const mongoose = require('mongoose')
 const io = socketio(server)
-const { addUser, deleteUserFromChatList, getUser, getLoginsInChat, changeChatName, getChats, verifyChatPassword, createChat } = require('./src/chat/chatController')
+const { addUser, deleteUserFromChatList, getUser, getLoginsInChat,
+  changeChatName, getChats, verifyChatPassword, createChat,
+  deleteChat } = require('./src/chat/chatController')
 // const chatRoutes = require("./src/chat/chatRoutes")
 // app.use(chatRoutes)
 // ==================================
@@ -46,13 +48,10 @@ io.on('connect', (socket) => {
   socket.on('doesUserExist',
     function (data, fn) {
       console.log('\n\ndoesUserExist Begin_________________________________________________________________')
-
       const { login, chat } = data
-
       console.table([data, login, chat])
       usersInChat = getLoginsInChat(chat)
       console.table(usersInChat)
-
       if (usersInChat == false) {
         fn(true)
       }
@@ -66,12 +65,20 @@ io.on('connect', (socket) => {
     }
   );
 
+  //CHAT CRUD ===================
   socket.on('createNewChat', ({ chat, password }, callback) => {
     if (createChat({ password, chat })) { // if true, chat exists, return error
       callback({ error: 'Chat already exists' })
     }
     callback({ message: 'OK' })
   })
+
+  socket.on('deleteChat', ({ chat }, callback) => {
+    // if true, chat doesnt exists, return error
+    if (deleteChat({ chat })) callback(true) //error
+    else io.emit('redirectToIndex', {oldChat:chat}) //success
+  })
+  //CHAT CRUD ===================
 
   socket.on('join', ({ login, chat }, callback) => {
     console.log('\n\njoin Begin___________________________________________________________________')
@@ -118,6 +125,7 @@ io.on('connect', (socket) => {
     console.log('changeChatNameInServer End_____________________________________________________________________')
   })
 
+  
   socket.on('disconnect', function () {
     console.log('\n\nBegin Disconnection______________________________________________________________________')
     if (socket.chat || socket.login) {
