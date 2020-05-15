@@ -74,7 +74,6 @@ io.on('connect', (socket) => {
   })
 
   socket.on('deleteChat', ({ chat }, callback) => {
-    // if true, chat doesnt exists, return error
     if (deleteChat({ chat })) callback(true) //error
     else io.emit('redirectToIndex', {oldChat:chat}) //success
   })

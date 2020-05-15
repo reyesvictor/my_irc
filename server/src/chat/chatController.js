@@ -5,6 +5,9 @@ users[nameDefault] = []
 const chatPasswords = {}
 chatPasswords[nameDefault] = []
 chatPasswords[nameDefault].push('root')
+const chatUpdatedAt = {}
+chatUpdatedAt[nameDefault] = []
+chatUpdatedAt[nameDefault].push(new Date('now'))
 
 const arr = ['chocolat', 'café', 'caramel']
 
@@ -30,6 +33,8 @@ const createChat = ({ password, chat }) => {
     users[chat] = []
     chatPasswords[chat] = []
     chatPasswords[chat].push(password)
+    chatUpdatedAt[chat] = []
+    chatUpdatedAt[chat].push(new Date('now'))
   }
   // chatPasswords[chat] = [password]
   // }
@@ -92,6 +97,7 @@ const deleteChat = (chat) => {
   if ( !users[chat.chat] ) return true
   delete users[chat.chat] //delete room
   delete chatPasswords[chat.chat] //delete room
+  delete chatUpdatedAt[chat]
 }
 
 const getChats = () => {
@@ -106,6 +112,7 @@ const getChats = () => {
   return roomlist
 }
 const verifyChatPassword = ({ adminpw, chat }) => chatPasswords[chat] == adminpw
+const verifyChatUpdated = ({ adminpw, chat }) => chatUpdatedAt[chat] == adminpw // à modifier <=============================
 //if chat exists, true => continue, if not, false => redirect to homepage
 const verifyIfChatExists = (chat) => Object.keys(users).includes(chat) ? true : false
 

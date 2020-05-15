@@ -105,14 +105,22 @@ const Home = ({ match, location }) => {
       <div className="form-group">
         <label htmlFor="exampleInputEmail1">Room Name</label>
         <input type="text" className="form-control" id="exampleInputEmail1" aria-describedby="roomHelp" name="title" placeholder="Enter Room Name" onChange={e => setChat(e.target.value)} />
-        <small id="emailHelp" className="form-text text-muted">Gas Chamber is not allowed as a name.</small>
+        <small id="emailHelp" className="form-text text-muted">Gas Chamber is not allowed as a name. Only letters from A to Z.</small>
       </div>
       <div className="form-group">
         <label htmlFor="exampleInputPassword1">Password</label>
         <input type="password" className="form-control" id="exampleInputPassword1" placeholder="Enter Complex Password" name="password" onChange={e => setPassword(e.target.value)} />
         <small id="emailHelp" className="form-text text-muted">This password is crucial, only with the password you can delete the room.</small>
       </div>
-      <Button onClick={function (e) { if (!login && !chat && !password) e.preventDefault(); onSubmit() }}>
+      <Button onClick={function (e) {
+        if (login && chat && password && /^[a-zA-Z]+$/.test(chat)) {
+          onSubmit()
+        }
+        else {
+          e.preventDefault()
+          toast.error('Please make sure everything is correct')
+        }
+      }}>
         Create
       </Button>
     </form>

@@ -84,7 +84,12 @@ const Chat = ({ location }) => {
           const { oldChat } = data
           console.log(data, chat)
           if (oldChat == chat) {
-            window.location = `/`
+            
+            document.getElementById("messageBox").disabled = true;
+            toast.info('The Chat was deleted. You\'ll be redirected to the homepage. BYE BYE !', {position:'top-center'})
+            setTimeout(function(){ 
+              window.location = `/`
+            }, 5000);
           }
         })
 
