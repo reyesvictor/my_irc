@@ -11,11 +11,6 @@ const addUser = ({ id, login, chat }) => {
   console.table(util.inspect(users, { showHidden: false, depth: null }))
   login = login.trim().toLowerCase()
   chat = chat.trim().toLowerCase()
-
-  if (!Object.keys(users).includes(chat)) { // if chat name doesnt exist in array then create 
-    users[chat] = []
-    // chatPasswords[chat] = [password]
-  }
   users[chat] = users[chat].filter(user => user.login !== login)
   console.log('===number of users connected====', users[chat].length) //donne le nombre de users connectés
   console.log(`======content of ${chat} room=====`, users[chat])
@@ -24,6 +19,19 @@ const addUser = ({ id, login, chat }) => {
   console.log('\nUser has been pushed\n')
   users[chat].push(user)
   return { user }
+}
+
+const createChat = ({ password, chat }) => {
+  // if (!Object.keys(users).includes(chat)) { // if chat name doesnt exist in array then create 
+  if ( Object.keys(users).includes(chat) ) {
+return true;
+  } else {
+    users[chat] = []
+    chatPasswords[chat] = []
+    chatPasswords[chat].push(password)
+  }
+  // chatPasswords[chat] = [password]
+  // }
 }
 
 const deleteUserFromChatList = (id, chat) => { //returns username of person that left
@@ -114,4 +122,8 @@ const changeChatName = (oldChat, newChat) => {
   }
 }
 
-module.exports = { addUser, deleteUserFromChatList, getUser, getLoginsInChat, changeChatName, getChats, verifyChatPassword , verifyIfChatExists}
+module.exports = {
+  addUser, deleteUserFromChatList, getUser,
+  getLoginsInChat, changeChatName, getChats,
+  verifyChatPassword, verifyIfChatExists, createChat
+}

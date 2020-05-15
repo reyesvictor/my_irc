@@ -10,7 +10,7 @@ const socketio = require("socket.io")
 const server = http.createServer(app)
 const mongoose = require('mongoose')
 const io = socketio(server)
-const { addUser, deleteUserFromChatList, getUser, getLoginsInChat, changeChatName, getChats, verifyChatPassword } = require('./src/chat/chatController')
+const { addUser, deleteUserFromChatList, getUser, getLoginsInChat, changeChatName, getChats, verifyChatPassword, createChat } = require('./src/chat/chatController')
 // const chatRoutes = require("./src/chat/chatRoutes")
 // app.use(chatRoutes)
 // ==================================
@@ -42,9 +42,7 @@ io.on('connect', (socket) => {
   console.log('User is connected')
   io.emit('getChatList', getChats())
   console.log('\n\n\n')
-
   socket.on('verifyChatPassword', ({ adminpw, chat }, callback) => callback(verifyChatPassword({ adminpw, chat })))
-
   socket.on('doesUserExist',
     function (data, fn) {
       console.log('\n\ndoesUserExist Begin_________________________________________________________________')
@@ -68,8 +66,11 @@ io.on('connect', (socket) => {
     }
   );
 
-  socket.on('createNewChat', ({chat, password}) => {
-    
+  socket.on('createNewChat', ({ chat, password }, callback) => {
+    if (createChat({ password, chat })) { // if true, chat exists, return error
+      callback({ error: 'Chat already exists' })
+    }
+    callback({ message: 'OK' })
   })
 
   socket.on('join', ({ login, chat }, callback) => {
@@ -107,12 +108,12 @@ io.on('connect', (socket) => {
     const { oldChat, newChat } = data
     console.log('=====passation du nouveau data chat name======', data)
     //changeChatName also modifies password
-    if ( changeChatName(oldChat, newChat) ) { //success
+    if (changeChatName(oldChat, newChat)) { //success
       io.emit('getChatList', getChats()) //update select list in homepage
       socket.chat = newChat //update socket variable
       io.emit('changeChatNameInPage', data)
     } else { //fail
-      callback({error:'Old Chat Name Does Not Exist'})
+      callback({ error: 'Old Chat Name Does Not Exist' })
     }
     console.log('changeChatNameInServer End_____________________________________________________________________')
   })
@@ -130,7 +131,7 @@ io.on('connect', (socket) => {
       // console.table([getLoginsInChat(chat)[0]])
       //faire array avec key nom du channel
       const userName = deleteUserFromChatList(socket.id, chat) //retourne false si chat nexiste plus
-      if ( !userName === false ) {
+      if (!userName === false) {
         console.log('4__________________________')
         io.emit('message', { chatName: chat, user: 'admin', text: `${login} has left the room. You can now talk on his back !` })
         console.log('5__________________________')

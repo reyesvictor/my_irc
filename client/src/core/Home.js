@@ -45,28 +45,13 @@ const Home = ({ match, location }) => {
   }, [])
 
   const onSubmit = () => {
-    // // headers 
-    // const config = {
-    //   headers: {
-    //     "Content-type": "application/json"
-    //   }
-    // }
-    // //request info
-    // const body = JSON.stringify({ chat, password })
-    // console.log("test")
-    // axios.post('http://127.0.0.1:4141/chat', body, config)
-    //   .then(res => {
-    //     window.location = `/chat?login=${login}&chat=${chat}`
-    //   })
-    //   .catch(error => {
-    //     toast.error(error.response.data.error)
-    //   })
-
-    //replace with socket.io
-    socket.emit('createNewChat', ({chat, password}) => {
+    socket.emit('createNewChat', ({ chat, password }), function ({ error, message }) {
+      if (error) {
+        toast.error(error)
+      } else {
         window.location = `/chat?login=${login}&chat=${chat}`
+      }
     })
-
   }
 
   const checkIfUserExists = () => {
