@@ -1,13 +1,18 @@
 const util = require('util')
 let users = {}
-const nameDefault = 'ilikebigsockets'
-users[nameDefault] = []
+const defaultChats = ['ilikebigsockets', 'autodeletein3minutes']
 const chatPasswords = {}
-chatPasswords[nameDefault] = []
-chatPasswords[nameDefault].push('root')
 const chatUpdatedAt = {}
-chatUpdatedAt[nameDefault] = []
-chatUpdatedAt[nameDefault].push(new Date('now'))
+const date = Date.now()
+defaultChats.map(chat => {
+  users[chat] = []
+  chatPasswords[chat] = []
+  chatPasswords[chat].push('root')
+  chatUpdatedAt[chat] = []
+  if (!chatUpdatedAt[chat].length) {
+    chatUpdatedAt[chat].push(date)
+  }
+})
 
 const arr = ['chocolat', 'café', 'caramel']
 
@@ -16,9 +21,6 @@ const addUser = ({ id, login, chat }) => {
   login = login.trim().toLowerCase()
   chat = chat.trim().toLowerCase()
   users[chat] = users[chat].filter(user => user.login !== login)
-  console.log('===number of users connected====', users[chat].length) //donne le nombre de users connectés
-  console.log(`======content of ${chat} room=====`, users[chat])
-  console.log(`======list of all rooms=====`, Object.keys(users))
   const user = { id, login }
   console.log('\nUser has been pushed\n')
   users[chat].push(user)
@@ -26,7 +28,6 @@ const addUser = ({ id, login, chat }) => {
 }
 
 const createChat = ({ password, chat }) => {
-  // if (!Object.keys(users).includes(chat)) { // if chat name doesnt exist in array then create 
   if (Object.keys(users).includes(chat)) {
     return true;
   } else {
@@ -36,19 +37,12 @@ const createChat = ({ password, chat }) => {
     chatUpdatedAt[chat] = []
     chatUpdatedAt[chat].push(new Date('now'))
   }
-  // chatPasswords[chat] = [password]
-  // }
 }
 
 const deleteUserFromChatList = (id, chat) => { //returns username of person that left
   let userName = ''
   if (users && users[chat]) {
-    console.table(util.inspect(chat, { showHidden: false, depth: null }))
-    console.table(util.inspect(users, { showHidden: false, depth: null }))
-    console.table(util.inspect(users[chat], { showHidden: false, depth: null }))
     const index = users[chat].findIndex((user) => user.id === id)
-    console.table(util.inspect(users[chat][index], { showHidden: false, depth: null }))
-    console.table(util.inspect(users[chat][index].login, { showHidden: false, depth: null }))
     userName = users[chat][index].login
     if (index !== -1) {
       users[chat].splice(index, 1)[0]
@@ -64,7 +58,6 @@ const getUser = (id, chat) => {
   Object.keys(users).forEach(room => {
     console.table(users[room])
   })
-  // console.table(users)
   console.log('result of filer: ')
   console.log(users[chat].filter((user) => user.id === id))
   return users[chat].filter((user) => user.id === id)
@@ -74,12 +67,26 @@ const getLoginsInChat = (chat) => {
   list = []
   loginslist = []
   if (users && chat && users[chat]) {
-    users[chat].forEach(user => { //users['chatroom name']
+    users[chat].forEach(user => {
       loginslist.push(user.login)
     })
     console.log(`List of logins of all users connected to ${chat}`)
     console.table(util.inspect(loginslist, { showHidden: false, depth: null }))
     return loginslist;
+  }
+  else return false
+}
+
+const getUsersInChat = (chat) => {
+  list = []
+  idslist = []
+  if (users && chat && users[chat]) {
+    users[chat].forEach(user => { //users['chatroom name']
+      idslist.push(user)
+    })
+    console.log(`List of logins of all users connected to ${chat}`)
+    console.table(util.inspect(idslist, { showHidden: false, depth: null }))
+    return idslist;
   }
   else return false
 }
@@ -93,28 +100,36 @@ const getLoginsList = (chat) => {
 }
 
 const deleteChat = (chat) => {
-  // console.log('\n\nverifyin channel', chat.chat, users[chat])
-  if ( !users[chat.chat] ) return true
+  if (!users[chat.chat]) return true
   delete users[chat.chat] //delete room
   delete chatPasswords[chat.chat] //delete room
-  delete chatUpdatedAt[chat]
+  delete chatUpdatedAt[chat.chat]
 }
 
 const getChats = () => {
   const roomlist = []
+  const roomDeleted = []
   Object.keys(users).forEach(room => {
-    roomlist.push(room)
+    if ((Date.now() - chatUpdatedAt[room]) / (1000 * 60) > 3) { //if innactive for more than 3 min, delete
+      delete users[room]
+      delete chatPasswords[room]
+      delete chatUpdatedAt[room]
+      roomDeleted.push(room)
+    } else {
+      roomlist.push(room)
+    }
   })
   console.log('All Chat Passwords')
   console.table(util.inspect(chatPasswords, { showHidden: false, depth: null }))
   console.log('Getting all chatrooms')
   console.table([roomlist])
-  return roomlist
+  return {roomlist, roomDeleted}
 }
+
 const verifyChatPassword = ({ adminpw, chat }) => chatPasswords[chat] == adminpw
 const verifyChatUpdated = ({ adminpw, chat }) => chatUpdatedAt[chat] == adminpw // à modifier <=============================
-//if chat exists, true => continue, if not, false => redirect to homepage
-const verifyIfChatExists = (chat) => Object.keys(users).includes(chat) ? true : false
+const verifyIfChatExists = (chat) => Object.keys(users).includes(chat) ? true : false //if chat exists, true => continue, if not, false => redirect to homepage
+const updateChatDate = (chat) => chatUpdatedAt[chat].push(Date.now())
 
 const changeChatName = (oldChat, newChat) => {
   if (!users || !users[oldChat]) {
@@ -126,6 +141,8 @@ const changeChatName = (oldChat, newChat) => {
     delete users[oldChat] //delete room
     chatPasswords[newChat] = chatPasswords[oldChat] //create new room with new name
     delete chatPasswords[oldChat] //delete room
+    chatUpdatedAt[newChat] = chatUpdatedAt[oldChat] //create new room with new name
+    delete chatUpdatedAt[oldChat] //delete room
     console.log(`NAME CHATROOM CHANGED, FROM ==> ${oldChat} TO ===> ${newChat}`)
     console.table(users[newChat], users[oldChat])
     Object.keys(users).forEach(room => {
@@ -140,6 +157,6 @@ const changeChatName = (oldChat, newChat) => {
 module.exports = {
   addUser, deleteUserFromChatList, getUser,
   getLoginsInChat, changeChatName, getChats,
-  verifyChatPassword, verifyIfChatExists, createChat,
-  deleteChat,
+  verifyChatPassword, verifyIfChatExists,
+  createChat, deleteChat, updateChatDate, getUsersInChat
 }

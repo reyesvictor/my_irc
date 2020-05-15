@@ -28,9 +28,6 @@ const Chat = ({ location }) => {
   const [messages, setMessages] = useState([])
   const ENDPOINT = process.env.REACT_APP_API
 
-  // USEREFFECT POST with the chat name in the get to check if it exists. 
-  // If it exists, check if last connection was over 2 weeks ago, if so, delete it and redirect user to Home.js
-
   //For Users
   useEffect(async () => {
 
@@ -42,14 +39,10 @@ const Chat = ({ location }) => {
     await axios.post('http://127.0.0.1:4141/chat/verifyURL', { location }, config)
       .then(res => {
         toast.success('url is good')
-        console.log('========test==========')
         const { login, chat } = queryStr.parse(location.search)
         socket = io(ENDPOINT)
         setLogin(login)
         setChat(chat.trim().toLowerCase())
-        console.log(location.search, " || Login ==> " + login, " || Chat Name ==> " + chat)
-        console.log(socket)
-        console.log('========end==========')
         socket.emit('join', { login, chat }, () => {
         })
 
@@ -57,11 +50,25 @@ const Chat = ({ location }) => {
         socket.on('message', (data) => {
           const { chatName, user, text } = data
           const message = { user, text }
-          console.table([data, chat, login])
           if (chatName == chat) {
             setMessages(messages => [...messages, message])
             const chatMessages = document.querySelector('.chat-1')
             chatMessages.scrollTop = chatMessages.scrollHeight
+          }
+        })
+
+        socket.on('roomIsDeletedGetOut', (room) => {
+          if (room == chat) {
+            toast.info('The chat was deleted because of inactivity ! You\'ll be redirected to the homepage. BYE !', { position: 'top-center' })
+            setTimeout(function () {
+              window.location = `/`
+            }, 5000);
+          }
+        })
+
+        socket.on('disconnectUser', (data) => {
+          if (socket.id == data) {
+            window.location = '/'
           }
         })
 
@@ -73,7 +80,6 @@ const Chat = ({ location }) => {
 
         socket.on('changeChatNameInPage', (data) => {
           const { oldChat, newChat } = data
-          console.log(data, chat)
           if (oldChat == chat) {
             setChat(newChat)
             window.location = `/chat?login=${login}&chat=${newChat}`
@@ -82,43 +88,105 @@ const Chat = ({ location }) => {
 
         socket.on('redirectToIndex', (data) => {
           const { oldChat } = data
-          console.log(data, chat)
           if (oldChat == chat) {
-            
             document.getElementById("messageBox").disabled = true;
-            toast.info('The Chat was deleted. You\'ll be redirected to the homepage. BYE BYE !', {position:'top-center'})
-            setTimeout(function(){ 
+            toast.info('The Chat was deleted. You\'ll be redirected to the homepage. BYE BYE !', { position: 'top-center' })
+            setTimeout(function () {
               window.location = `/`
             }, 5000);
           }
         })
 
         return () => {
-          // socket.emit('deleteUserFromChatList', { login, chat })
           socket.emit('disconnect')
           socket.off()
         }
       })
       .catch(error => {
-        toast.error('url is bad')
-        //redirect page
+        toast.error('Url Is Bad')
         window.location = '/'
       })
   }, [ENDPOINT, location.search])
 
+  const getChatlist = () => {
+    return new Promise(resolve => {
+      socket.emit('getChatlist', { login, chat },
+        function (data) {
+          resolve(data)
+        }
+      )
+    })
+  }
+
+  const parseCommands = async (message) => {
+    message = message.split(' ')
+    switch (message[0]) {
+      case '/part':
+        socket.emit('disconnectFromChannel', message[1])
+        break;
+      case '/nick':
+        if (logins.includes(message[1])) {
+          toast.error('This username is already taken', { position: 'top-center' })
+        }
+        else {
+          window.location = `/chat?login=${message[1]}&chat=${chat}`
+        }
+        break;
+      case '/list':
+        let test = await getChatlist()
+        let chatList = { user: 'admin', text: 'List of chats: ' }
+        test.map(function (chat) {
+          if (message[1]) {
+            if (chat.includes(message[1])) {
+              chatList.text += chat + ' '
+            }
+          }
+          else {
+            chatList.text += chat + ' '
+          }
+        })
+        chatList.text.replace("undefined", "")
+        setMessages(messages => [...messages, chatList])
+        let chatMessages = document.querySelector('.chat-1')
+        chatMessages.scrollTop = chatMessages.scrollHeight
+        break;
+      case '/users':
+        let userList = { user: 'admin', text: 'List of users: ' }
+        logins.map(function (login) {
+          userList.text += login + ' '
+        })
+        userList.text.replace("undefined", "")
+        setMessages(messages => [...messages, userList])
+        let chatMessages2 = document.querySelector('.chat-1')
+        chatMessages2.scrollTop = chatMessages2.scrollHeight
+        toast.error('IT\'S LITERALLY RIGHT UNDER HERE, ARE YOU BLIND? ', { position: 'top-center' })
+        let el = document.getElementsByClassName('members-panel-1')[0]
+        let ofs = 0
+        window.setInterval(function () {
+          el.style.background = 'rgba(255,0,0,' + Math.abs(Math.sin(ofs)) + ')';
+          ofs += 0.01;
+        }, 10);
+        break;
+      default:
+        toast.error('This command does not exist', { position: 'top-center' })
+    }
+  }
 
   //function send messages
   const sendMessage = (e) => {
     e.preventDefault()
-    if (document.querySelector('#messageBox').value) {
-      console.log('======Inside Send Message=====')
-      socket.emit('sendMessage', document.getElementById('messageBox').value, () => document.querySelector('#messageBox').value = '')
+    const message = document.querySelector('#messageBox').value
+    if (message.charAt(0) == '/') {
+      parseCommands(message)
+      document.querySelector('#messageBox').value = ''
+    }
+    else if (message) {
+      socket.emit('sendMessage', message, () => document.querySelector('#messageBox').value = '')
     }
   }
 
   const checkAdmin = () => {
     socket.emit('verifyChatPassword', { adminpw, chat }, function (isPasswordCorrect) {
-      console.log('verifychatpassword', isPasswordCorrect, 'check')
       if (isPasswordCorrect) { //yes == true
         toast.success('Password is correct !')
         setAdminaccess(true)
@@ -143,13 +211,11 @@ const Chat = ({ location }) => {
 
   const deleteChatroom = () => {
     socket.emit('deleteChat', { chat }, function (isChatDeleted) {
-      console.log('deleteChat', isChatDeleted, 'check')
       if (isChatDeleted) { //true == no bcoz it doesnt exist
         toast.error('Chat doesnt exist !', { position: 'top-left' })
       }
     })
   }
-
 
   const adminAccess = () => (
     <div>
@@ -180,9 +246,6 @@ const Chat = ({ location }) => {
             <h6 className="font-weight-bold mb-3 text-center text-lg-left">Members</h6>
             <div className="white z-depth-1 px-2 pt-3 pb-0 members-panel-1 scrollbar-light-blue">
               <ul className="list-unstyled friend-list">
-
-                {/* Variable à modifier par le nom des users connectés */}
-                {console.log(logins)}
                 {logins && logins.length > 0 ?
                   logins.map(function (login, i) {
                     return <li key={i + '-user'} className="active grey lighten-3 p-2 border border-info">
@@ -195,17 +258,12 @@ const Chat = ({ location }) => {
                   })
                   : null
                 }
-
               </ul>
             </div>
           </div>
-
           <div className="col-md-6 col-xl-8 pl-md-3 px-lg-auto px-0">
             <div className="chat-message">
-
               <ul className="list-unstyled chat-1 scrollbar-light-blue">
-                {/* <ScrollToBottom> */}
-                {console.log("_____________________________________")}
                 {messages && messages.length > 0 ?
                   messages.map(function (message, i) {
                     return <li key={i + "-message"} className={getClass1(message)} style={{ width: 100 + '%', height: 90 + 'px' }}>
@@ -216,7 +274,6 @@ const Chat = ({ location }) => {
                       } style={{ width: "fit-content" }}>
                         <div className="header" style={{ height: 10 + 'px' }}>
                           <strong className="primary-font">{message.user}</strong>
-                          {/* <small className="pull-right text-muted"><i className="far fa-clock"></i> 12 mins ago</small> */}
                         </div>
                         <hr className="w-100" />
                         <p className="mb-0">
@@ -226,25 +283,19 @@ const Chat = ({ location }) => {
                   })
                   : null
                 }
-                {/* </ScrollToBottom> */}
               </ul>
-
               <div className="white">
                 <div className="form-group basic-textarea">
-                  {/* Variable Message Ici */}
-                  {/* onChange={e => { setMessage(e.target.value) }} */}
                   <textarea id="messageBox" onKeyPress={e => e.key === 'Enter' ? sendMessage(e) : null}
                     className="form-control pl-2 my-0" rows="3" placeholder="Enter your message"></textarea>
                 </div>
               </div>
-              {/* <button type="button" className="btn btn-outline-pink btn-rounded btn-sm waves-effect waves-dark float-right">Send</button> */}
             </div>
           </div>
         </div>
       </div>
     </div>
   )
-
 
   const getClass1 = (message) => {
     if (message.user === login.trim().toLowerCase()) {
@@ -254,12 +305,10 @@ const Chat = ({ location }) => {
     }
   }
 
-
   return (
     <Layout>
       <ToastContainer />
       <div className='row'>
-        {/* {console.log('loop')} */}
         <div className='mx-auto col-12'>
           <div className='card mt-2'>
             <div className='card'>

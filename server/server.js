@@ -12,9 +12,7 @@ const mongoose = require('mongoose')
 const io = socketio(server)
 const { addUser, deleteUserFromChatList, getUser, getLoginsInChat,
   changeChatName, getChats, verifyChatPassword, createChat,
-  deleteChat } = require('./src/chat/chatController')
-// const chatRoutes = require("./src/chat/chatRoutes")
-// app.use(chatRoutes)
+  deleteChat, updateChatDate, getUsersInChat } = require('./src/chat/chatController')
 // ==================================
 const morgan = require("morgan")
 const dotenv = require('dotenv').config({ path: path.resolve(__dirname, './.env') })
@@ -38,11 +36,14 @@ mongoose
   .then(() => console.log("DB Connected"))
   .catch((err) => console.log("DB CONNECTION FAIL :", err))
 
-
 io.on('connect', (socket) => {
   console.log('\n\nconnect Begin_________________________________________________________________')
   console.log('User is connected')
-  io.emit('getChatList', getChats())
+  const {roomlist, roomDeleted} = getChats()
+  if ( roomDeleted.length ) {
+    roomDeleted.map(room => io.emit('roomIsDeletedGetOut', room) )
+  }
+  io.emit('getChatList', roomlist)
   console.log('\n\n\n')
   socket.on('verifyChatPassword', ({ adminpw, chat }, callback) => callback(verifyChatPassword({ adminpw, chat })))
   socket.on('doesUserExist',
@@ -65,6 +66,13 @@ io.on('connect', (socket) => {
     }
   );
 
+  socket.on('getChatlist',
+  function (data, fn) {
+    const {roomlist, roomDeleted} = getChats()
+    fn(roomlist)
+  }
+);
+
   //CHAT CRUD ===================
   socket.on('createNewChat', ({ chat, password }, callback) => {
     if (createChat({ password, chat })) { // if true, chat exists, return error
@@ -75,13 +83,12 @@ io.on('connect', (socket) => {
 
   socket.on('deleteChat', ({ chat }, callback) => {
     if (deleteChat({ chat })) callback(true) //error
-    else io.emit('redirectToIndex', {oldChat:chat}) //success
+    else io.emit('redirectToIndex', { oldChat: chat }) //success
   })
-  //CHAT CRUD ===================
 
   socket.on('join', ({ login, chat }, callback) => {
-    console.log('\n\njoin Begin___________________________________________________________________')
-    console.log('socket.on(JOIN)', [`${login} has joined chat room "${chat}"`])
+    console.log('\n\nJoin Begin___________________________________________________________________')
+    console.table([`${login} has joined chat room "${chat}"`])
     const { error, user } = addUser({ id: socket.id, login, chat })
     if (error) return callback({ error }) //if addUser find an error, we return and stop the function
     socket.login = login
@@ -100,6 +107,7 @@ io.on('connect', (socket) => {
     console.log('======receiving message', message)
     let str = socket.request.headers.referer
     const chat = str.split('/').reverse()[0].split('=').reverse()[0]
+    updateChatDate(chat)
     console.log('socketid et chat', socket.id, chat)
     const user = getUser(socket.id, chat)
     console.log('===SENDMESSAGE===', user, user[0], user[0].login, chat, message)
@@ -115,7 +123,11 @@ io.on('connect', (socket) => {
     console.log('=====passation du nouveau data chat name======', data)
     //changeChatName also modifies password
     if (changeChatName(oldChat, newChat)) { //success
-      io.emit('getChatList', getChats()) //update select list in homepage
+      const {roomlist, roomDeleted} = getChats()
+      // if ( roomDeleted.length ) {
+      //   roomDeleted.map(room => io.emit('roomIsDeletedGetOut', room) )
+      // }
+      io.emit('getChatList', roomlist)
       socket.chat = newChat //update socket variable
       io.emit('changeChatNameInPage', data)
     } else { //fail
@@ -124,7 +136,17 @@ io.on('connect', (socket) => {
     console.log('changeChatNameInServer End_____________________________________________________________________')
   })
 
-  
+  socket.on('disconnectFromChannel', function (chatName) {
+    const {roomlist, roomDeleted} = getChats()
+    if (roomlist.includes(chatName)) {
+      if (getLoginsInChat(chatName).includes(socket.login)) {
+        let usersInChat = getUsersInChat(chatName)
+        let ourUser = usersInChat.filter(user => user.login == socket.login)[0]
+        io.emit('disconnectUser', ourUser.id)
+      }
+    }
+  })
+
   socket.on('disconnect', function () {
     console.log('\n\nBegin Disconnection______________________________________________________________________')
     if (socket.chat || socket.login) {
@@ -143,7 +165,7 @@ io.on('connect', (socket) => {
         io.emit('message', { chatName: chat, user: 'admin', text: `${login} has left the room. You can now talk on his back !` })
         console.log('5__________________________')
         io.emit('chatData', { chat: chat, users: getLoginsInChat(chat) })
-        console.table([`LIST OF USER CONNECTED AFTER ${socket.login} LEFT ${socket.chat}`, getLoginsInChat(socket.chat)[0],])
+        console.table([`LIST OF USER CONNECTED AFTER ${socket.login} LEFT ${socket.chat}`, getLoginsInChat(socket.chat)[0]])
       }
       console.log('End Disconnection_______________________________________________________________________')
     }
