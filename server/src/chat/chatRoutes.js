@@ -2,12 +2,12 @@ const express = require("express")
 const router = express.Router()
 const Chat = require('./chatModel')
 const sha1 = require('sha1')
+const {verifyIfChatExists } = require('./chatController')
+
 
 router.post('/', (req, res) => {
     const { password, chat } = req.body
-
     const title = chat
-
     if (!password || !title) {
         return res.status(400).json({ error: 'Please enter all fields' })
     }
@@ -46,47 +46,28 @@ router.get('/', (req, res) => {
         })
 })
 
-router.post('/admin', (req, res) => {
-
-    const { adminpw, chat } = req.body
-
-    if (!adminpw || !chat) {
-        return res.status(400).json({ error: 'Please enter all fields' })
-    }
-    else {
-        Chat.findOne({ chat })
-            .then(chat => {
-                if (chat) {
-                    if (chat.author_password == sha1(adminpw)) {
-                        return res.status(200).json({ adminaccess: true })
-                    }
-                    else {
-                        return res.status(400).json({ error: 'Incorrect access code' })
-                    }
-                }
-                else {
-                    return res.status(400).json({ error: 'The chat room does not exist' })
-                }
-            })
-    }
-})
-
 router.post('/changename', (req, res) => {
+    console.log('0 changename__________________________________')
 
     const { newchat, chat } = req.body
     const oldChat = chat
-
+    console.log('1__________________________________')
+    console.table([newchat, chat])
     if (!newchat || !chat) {
+        console.log('1 end__________________________________')
         return res.status(400).json({ error: 'Please enter all fields' })
     }
     else {
+        console.log('2 else__________________________________')
         Chat.findOne({ chat })
             .then(chat => {
                 if (chat) {
+                    console.log('3__________________________________')
                     chat.save()
-                    return res.status(200).json({ newChat:newchat, oldChat:oldChat })
+                    return res.status(200).json({ newChat: newchat, oldChat: oldChat })
                 }
                 else {
+                    console.log('4__________________________________')
                     return res.status(400).json({ error: 'The chat room does not exist' })
                 }
             })
@@ -113,5 +94,22 @@ router.post('/deletechat', (req, res) => {
             })
     }
 })
+
+
+router.post('/verifyURL', (req, res) => {
+    console.log('\nrouterget_____________________________________________________________')
+    console.log(req.body)
+    const { search } = req.body.location
+    console.log(search)
+    const chat = search.split('/').reverse()[0].split('=').reverse()[0]
+    //verifier si chat existe. sinon redirect.
+    if ( verifyIfChatExists(chat) ) { // true == chat exist, all ok
+        return res.status(200).json({msg:'EVERYTHING OK'});
+    } else { // chat does not exist
+        return res.status(400).json({error:'WRONG URL'});
+    }
+    console.log('routerget_____________________________________________________________\n')
+  })
+
 
 module.exports = router

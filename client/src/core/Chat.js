@@ -18,8 +18,8 @@ const ROOT_CSS = css({
 let socket
 
 const Chat = ({ location }) => {
-  const [adminpw, setAdminpw] = useState()  
-  const [newchat, setNewchat] = useState()
+  const [adminpw, setAdminpw] = useState()
+  const [newChat, setNewChat] = useState()
   const [adminaccess, setAdminaccess] = useState()
   const [logins, setLogins] = useState([])
   const [login, setLogin] = useState()
@@ -32,48 +32,65 @@ const Chat = ({ location }) => {
   // If it exists, check if last connection was over 2 weeks ago, if so, delete it and redirect user to Home.js
 
   //For Users
-  useEffect(() => {
-    console.log('========test==========')
-    const { login, chat } = queryStr.parse(location.search)
-    socket = io(ENDPOINT)
-    setLogin(login)
-    setChat(chat)
-    console.log(location.search, " || Login ==> " + login, " || Chat Name ==> " + chat)
-    console.log(socket)
-    console.log('========end==========')
-    socket.emit('join', { login, chat }, () => {
-    })
+  useEffect(async () => {
 
-    //For Messages
-    socket.on('message', (data) => {
-      const { chatName, user, text } = data
-      const message = { user, text }
-      if (chatName == chat) {
-        setMessages(messages => [...messages, message])
-        const chatMessages = document.querySelector('.chat-1')
-        chatMessages.scrollTop = chatMessages.scrollHeight
+    const config = {
+      headers: {
+        "Content-type": "application/json"
       }
-    })
-
-    socket.on('chatData', (data) => {
-      if (data.chat == chat) {
-        setLogins(data.users)
-      }
-    })
-
-    socket.on('changeChatNameInPage', (data) => {
-      const {oldChat, newChat} = data
-      if (oldChat == chat) {
-        setChat(newChat)
-      }
-    })
-
-
-    return () => {
-      // socket.emit('deleteUserFromChatList', { login, chat })
-      socket.emit('disconnect')
-      socket.off()
     }
+    await axios.post('http://127.0.0.1:4141/chat/verifyURL', { location }, config)
+      .then(res => {
+        toast.success('url is good')
+        console.log('========test==========')
+        const { login, chat } = queryStr.parse(location.search)
+        socket = io(ENDPOINT)
+        setLogin(login)
+        setChat(chat.trim().toLowerCase())
+        console.log(location.search, " || Login ==> " + login, " || Chat Name ==> " + chat)
+        console.log(socket)
+        console.log('========end==========')
+        socket.emit('join', { login, chat }, () => {
+        })
+
+        //For Messages
+        socket.on('message', (data) => {
+          const { chatName, user, text } = data
+          const message = { user, text }
+          console.table([data, chat, login])
+          if (chatName == chat) {
+            setMessages(messages => [...messages, message])
+            const chatMessages = document.querySelector('.chat-1')
+            chatMessages.scrollTop = chatMessages.scrollHeight
+          }
+        })
+
+        socket.on('chatData', (data) => {
+          if (data.chat == chat) {
+            setLogins(data.users)
+          }
+        })
+
+        socket.on('changeChatNameInPage', (data) => {
+          const { oldChat, newChat } = data
+          console.log(data, chat)
+          if (oldChat == chat) {
+            setChat(newChat)
+            window.location = `/chat?login=${login}&chat=${newChat}`
+          }
+        })
+
+        return () => {
+          // socket.emit('deleteUserFromChatList', { login, chat })
+          socket.emit('disconnect')
+          socket.off()
+        }
+      })
+      .catch(error => {
+        toast.error('url is bad')
+        //redirect page
+        window.location = '/'
+      })
   }, [ENDPOINT, location.search])
 
 
@@ -87,40 +104,28 @@ const Chat = ({ location }) => {
   }
 
   const checkAdmin = () => {
-    const config = {
-      headers: {
-        "Content-type": "application/json"
+    socket.emit('verifyChatPassword', { adminpw, chat }, function (isPasswordCorrect) {
+      console.log('verifychatpassword', isPasswordCorrect, 'check')
+      if (isPasswordCorrect) { //yes == true
+        toast.success('Password is correct !')
+        setAdminaccess(true)
+      } else { //no == false
+        toast.error('Password is incorrect !', { position: 'top-left' })
       }
-    }
-    //request info
-    const body = JSON.stringify({ adminpw, chat })
-    axios.post('http://127.0.0.1:4141/chat/admin', body, config)
-      .then(res => {
-        setAdminaccess(res.data.adminaccess)
-      })
-      .catch(error => {
-        toast.error(error.response.data.error, { position: 'top-left' })
-      })
+    })
   }
 
   const changeChatName = () => {
-    const config = {
-      headers: {
-        "Content-type": "application/json"
-      }
+    if (newChat == '' || !newChat) {
+      toast.error('Missing new chat name')
+      return false;
+    } else {
+      socket.emit('changeChatNameInServer', { newChat, oldChat: chat }, function ({ error, oldChat }) {
+        if (error) { //fail at changing, probably the oldChat name  doest exist
+          toast.error(error, { position: 'top-left' })
+        }
+      })
     }
-    //request info
-    const body = JSON.stringify({ newchat, chat })
-    axios.post('http://127.0.0.1:4141/chat/changename', body, config)
-      .then(res => {
-        setChat(res.data)
-        // CHANGE THE NAME OF THE ROOM OF EACH PERSON CONNECTED TO IT IN SOCKET.IO TO THE NEW ROOM
-        socket.emit('changeChatNameInServer', res.data)
-        // socket.io (everybodyinthe OLDNAME chatroom.map -> OLDNAME = NEWNAME)
-      })
-      .catch(error => {
-        toast.error(error.response.data.error, { position: 'top-left' })
-      })
   }
 
 
@@ -150,8 +155,8 @@ const Chat = ({ location }) => {
       {adminaccess ?
         <div className="m-1 p-1" >
           <div className="m-1 p-1 card" style={{ width: 200 + 'px' }}>
-            <label htmlFor="newchat">New name:</label><br></br>
-            <input onChange={e => setNewchat(e.target.value)} id="newchat" type="text"></input><br></br>
+            <label htmlFor="newChat">New name:</label><br></br>
+            <input onChange={e => setNewChat(e.target.value)} id="newChat" type="text"></input><br></br>
             <button className="btn btn-primary p-2 m-2" onClick={() => changeChatName()}>Change Name</button>
             <button className="btn btn-danger p-2 m-2" onClick={() => deleteChatroom()}>Delete Chatroom</button>
           </div>

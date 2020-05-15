@@ -22,17 +22,22 @@ const Home = ({ match, location }) => {
   const ENDPOINT = process.env.REACT_APP_API
 
   useEffect(() => {
-    fetch(`${process.env.REACT_APP_API}/chat/`)
-      .then(res => res.json())
-      .then(
-        async (result) => {
-          setIsLoaded(true);
-          await setChats(result);
-        }
-      )
-
+    // fetch(`${process.env.REACT_APP_API}/chat/`)
+    //   .then(res => res.json())
+    //   .then(
+    //     async (result) => {
+    //       setIsLoaded(true);
+    //       await setChats(result);
+    //     }
+    //   )
     socket = io(ENDPOINT)
 
+    //recuperer la liste
+    socket.on('getChatList', async (chats) => {
+      setIsLoaded(true);
+      await setChats(chats)
+    })
+    //trouver ou envoyer le mdp et lenregisteer
     return () => {
       socket.off()
     }
@@ -40,24 +45,28 @@ const Home = ({ match, location }) => {
   }, [])
 
   const onSubmit = () => {
-    // headers 
-    const config = {
-      headers: {
-        "Content-type": "application/json"
-      }
-    }
+    // // headers 
+    // const config = {
+    //   headers: {
+    //     "Content-type": "application/json"
+    //   }
+    // }
+    // //request info
+    // const body = JSON.stringify({ chat, password })
+    // console.log("test")
+    // axios.post('http://127.0.0.1:4141/chat', body, config)
+    //   .then(res => {
+    //     window.location = `/chat?login=${login}&chat=${chat}`
+    //   })
+    //   .catch(error => {
+    //     toast.error(error.response.data.error)
+    //   })
 
-    //request info
-    const body = JSON.stringify({ chat, password })
-    console.log("test")
-
-    axios.post('http://127.0.0.1:4141/chat', body, config)
-      .then(res => {
+    //replace with socket.io
+    socket.emit('createNewChat', ({chat, password}) => {
         window.location = `/chat?login=${login}&chat=${chat}`
-      })
-      .catch(error => {
-        toast.error(error.response.data.error)
-      })
+    })
+
   }
 
   const checkIfUserExists = () => {
@@ -71,7 +80,7 @@ const Home = ({ match, location }) => {
   }
 
   const redirectIfValid = () => {
-    window.location = `/chat?login=${login}&chat=${chat}`
+    window.location = `/chat?login=${login.trim().toLowerCase()}&chat=${chat.trim().toLowerCase()}`
   }
 
   const joinForm = () => (
@@ -83,7 +92,7 @@ const Home = ({ match, location }) => {
       </div>
       <select className="form-control" onChange={e => e.target.value && e.target.value !== "" ? setChat(e.target.value) : null}>
         <option value="">Choose one</option>
-        {chats ? chats.map((singleChat) => <option key={singleChat.chat} value={singleChat.chat}>{singleChat.chat}</option>) : null}
+        {chats ? chats.map((chat) => <option key={chat} value={chat}>{chat}</option>) : null}
       </select>
       <span className="btn btn-success mt-2" onClick={
         async function (e) {
@@ -92,7 +101,7 @@ const Home = ({ match, location }) => {
             redirectIfValid()
           }
           else {
-            toast.error("Somebody already took that name", { position: 'top-center' })
+            toast.error("Parameters are wrong, change login or choose a chatroom", { position: 'top-center' })
           }
         }}
       >
