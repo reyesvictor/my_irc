@@ -8,7 +8,6 @@ const path = require("path")
 const http = require("http")
 const socketio = require("socket.io")
 const server = http.createServer(app)
-// const mongoose = require('mongoose')
 const io = socketio(server)
 const { addUser, deleteUserFromChatList, getUser, getLoginsInChat,
   changeChatName, getChats, verifyChatPassword, createChat,
@@ -31,17 +30,12 @@ app.use(function (req, res, next) {
   next()
 })
 
-// mongoose
-//   .connect("mongodb://127.0.0.1:27042/my_irc", { useNewUrlParser: true, useUnifiedTopology: true })
-//   .then(() => console.log("DB Connected"))
-//   .catch((err) => console.log("DB CONNECTION FAIL :", err))
-
 io.on('connect', (socket) => {
   console.log('\n\nconnect Begin_________________________________________________________________')
   console.log('User is connected')
-  const {roomlist, roomDeleted} = getChats()
-  if ( roomDeleted.length ) {
-    roomDeleted.map(room => io.emit('roomIsDeletedGetOut', room) )
+  const { roomlist, roomDeleted } = getChats()
+  if (roomDeleted.length) {
+    roomDeleted.map(room => io.emit('roomIsDeletedGetOut', room).emit('messageToAllChats', { user: 'admin', text: `The chat "${room}" is now deleted. Press F.` })) //success
   }
   io.emit('getChatList', roomlist)
   console.log('\n\n\n')
@@ -64,80 +58,104 @@ io.on('connect', (socket) => {
       }
       console.log('doesUserExist End___________________________________________________________________')
     }
-  );
+  )
 
+  socket.on('privatemsg', async ({ chat, sendTo, messageSent }, callback) => {
+    let usersInChat = getUsersInChat(chat)
+    let ourUser = usersInChat.filter(user => user.login == sendTo)[0]
+    console.log(ourUser)
+    io.to(ourUser.id).emit('getPrivateMessage', { user: socket.login, text: messageSent })
+  })
+  
   socket.on('getChatlist',
-  function (data, fn) {
-    const {roomlist, roomDeleted} = getChats()
-    fn(roomlist)
-  }
-);
+    function (data, fn) {
+      const { roomlist, roomDeleted } = getChats()
+      if (roomDeleted.length) {
+        roomDeleted.map(room => io.emit('roomIsDeletedGetOut', room).emit('messageToAllChats', { user: 'admin', text: `The chat "${room}" is now deleted. Press F.` })) //success
+      }
+      fn(roomlist)
+    }
+  )
 
   //CHAT CRUD ===================
   socket.on('createNewChat', ({ chat, password }, callback) => {
-    if (createChat({ password, chat })) { // if true, chat exists, return error
+    if (createChat({ chat, password })) { // if true, chat exists, return error
       callback({ error: 'Chat already exists' })
+    } else {
+      io.local.emit('messageToAllChats', { user: 'admin', text: `The chat"${chat}" is now created, come by say hello !` })
+      callback({ message: 'OK' })
     }
-    callback({ message: 'OK' })
   })
 
   socket.on('deleteChat', ({ chat }, callback) => {
-    if (deleteChat({ chat })) callback(true) //error
-    else io.emit('redirectToIndex', { oldChat: chat }) //success
+    if (deleteChat({chat})) callback({chatIsNotDeleted:true}) //error
+    else io.emit('redirectToIndex', { oldChat: chat }).emit('messageToAllChats', { user: 'admin', text: `The chat"${chat}" is now deleted. Press F.` }) //success
+    const { roomlist, roomDeleted } = getChats()
+    callback({newChatsList:roomlist})
+    io.emit('refreshChatsList', roomlist)
   })
 
-  socket.on('join', ({ login, chat }, callback) => {
-    console.log('\n\nJoin Begin___________________________________________________________________')
+  socket.on('deleteChatByTerminal', ({ chat, password }, callback) => {
+    if (deleteChat({ chat, password })) callback(deleteChat({ chat, password })) // if error return error
+    else io.emit('redirectToIndex', { oldChat: chat }).emit('messageToAllChats', { user: 'admin', text: `The chat"${chat}" is now deleted. Press F.` }) //success
+    const { roomlist, roomDeleted } = getChats()
+    callback({newChatsList:roomlist})
+    io.emit('refreshChatsList', roomlist)
+  })
+
+  socket.on('join', async ({ login, chat }, callback) => {
     console.table([`${login} has joined chat room "${chat}"`])
     const { error, user } = addUser({ id: socket.id, login, chat })
     if (error) return callback({ error }) //if addUser find an error, we return and stop the function
     socket.login = login
     socket.chat = chat
-    console.log('======user created======', user, '=========sending msg to user connected==========')
     socket.emit('message', { chatName: chat, user: 'admin', text: `${user.login}, welcome to the room ${chat}` })
     socket.broadcast.to(chat).emit('message', { chatName: chat, user: 'admin', text: `${user.login} has joined` }) //broadcast sends a message to everyone in the room except the user
     socket.join(chat)
     io.emit('chatData', { chat: chat, users: getLoginsInChat(chat) })
-    callback() //so we can work after in react
-    console.log('join End_____________________________________________________________________')
+    const { roomlist, roomDeleted } = await getChats()
+    callback({chats: roomlist}) //refresh chats list
+    io.emit('refreshChatsList', roomlist)
   })
 
   socket.on('sendMessage', (message, callback) => {
-    console.log('\n\nsendMessage Begin___________________________________________________________________')
-    console.log('======receiving message', message)
     let str = socket.request.headers.referer
     const chat = str.split('/').reverse()[0].split('=').reverse()[0]
     updateChatDate(chat)
     console.log('socketid et chat', socket.id, chat)
     const user = getUser(socket.id, chat)
-    console.log('===SENDMESSAGE===', user, user[0], user[0].login, chat, message)
     io.emit('message', { chatName: chat, user: user[0].login, text: message })
     io.emit('chatData', { chat: chat, users: getLoginsInChat(chat) })
     callback() //so we can work after in react
-    console.log('sendMessage End_____________________________________________________________________')
   })
 
+  socket.on('getChats', (callback) => {
+    getChats()
+  })
+  socket.on('changeNickname', ({ chat, oldLogin, newLogin }) => 
+  socket.broadcast.emit('messageToAllChats', { user: 'admin', text: `"${oldLogin}" from "${chat}" chat is pseudofluid. His new name is "${newLogin}".` })) //success
+
   socket.on('changeChatNameInServer', (data, callback) => {
-    console.log('\n\nchangeChatNameInServer Begin___________________________________________________________________')
     const { oldChat, newChat } = data
-    console.log('=====passation du nouveau data chat name======', data)
-    //changeChatName also modifies password
     if (changeChatName(oldChat, newChat)) { //success
-      const {roomlist, roomDeleted} = getChats()
-      // if ( roomDeleted.length ) {
-      //   roomDeleted.map(room => io.emit('roomIsDeletedGetOut', room) )
-      // }
+      const { roomlist, roomDeleted } = getChats()
+      if (roomDeleted.length) {
+        roomDeleted.map(room => io.emit('roomIsDeletedGetOut', room).emit('messageToAllChats', { user: 'admin', text: `The chat "${room}" is now deleted. Press F.` })) //success
+      }
       io.emit('getChatList', roomlist)
       socket.chat = newChat //update socket variable
       io.emit('changeChatNameInPage', data)
+      callback({chats: roomlist}) //refresh chats list
     } else { //fail
       callback({ error: 'Old Chat Name Does Not Exist' })
     }
-    console.log('changeChatNameInServer End_____________________________________________________________________')
   })
 
   socket.on('disconnectFromChannel', function (chatName) {
-    const {roomlist, roomDeleted} = getChats()
+    const { roomlist, roomDeleted } = getChats()
+    if (roomDeleted.length) {
+      roomDeleted.map(room => io.emit('roomIsDeletedGetOut', room).emit('messageToAllChats', { user: 'admin', text: `The chat "${room}" is now deleted. Press F.` })) //success
+    }
     if (roomlist.includes(chatName)) {
       if (getLoginsInChat(chatName).includes(socket.login)) {
         let usersInChat = getUsersInChat(chatName)
@@ -156,9 +174,6 @@ io.on('connect', (socket) => {
       console.log('2__________________________')
       const chat = socket.chat
       console.log('3__________________________')
-      // console.table([`LIST OF USER CONNECTED BEFORE ${socket.login }LEAVING ${socket.chat}`])
-      // console.table([getLoginsInChat(chat)[0]])
-      //faire array avec key nom du channel
       const userName = deleteUserFromChatList(socket.id, chat) //retourne false si chat nexiste plus
       if (!userName === false) {
         console.log('4__________________________')
@@ -171,8 +186,6 @@ io.on('connect', (socket) => {
     }
   })
 })
-
-
 
 server.listen(process.env.PORT, process.env.HOSTNAME, () => {
   console.log(`Running on port ${process.env.PORT} - ${process.env.NODE_ENV}`)

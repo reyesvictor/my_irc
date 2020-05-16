@@ -22,16 +22,7 @@ const Home = ({ match, location }) => {
   const ENDPOINT = process.env.REACT_APP_API
 
   useEffect(() => {
-    // fetch(`${process.env.REACT_APP_API}/chat/`)
-    //   .then(res => res.json())
-    //   .then(
-    //     async (result) => {
-    //       setIsLoaded(true);
-    //       await setChats(result);
-    //     }
-    //   )
     socket = io(ENDPOINT)
-
     //recuperer la liste
     socket.on('getChatList', async (chats) => {
       setIsLoaded(true);
@@ -79,7 +70,7 @@ const Home = ({ match, location }) => {
         <option value="">Choose one</option>
         {chats ? chats.map((chat) => <option key={chat} value={chat}>{chat}</option>) : null}
       </select>
-      <span className="btn btn-success mt-2" onClick={e => verifyBeforeJoinChannel()}>
+      <span className="btn btn-success mt-2" onClick={e => verifyBeforeJoinChannel(e)}>
         Join
       </span>
     </form>

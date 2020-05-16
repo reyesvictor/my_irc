@@ -14,8 +14,6 @@ defaultChats.map(chat => {
   }
 })
 
-const arr = ['chocolat', 'café', 'caramel']
-
 const addUser = ({ id, login, chat }) => {
   console.table(util.inspect(users, { showHidden: false, depth: null }))
   login = login.trim().toLowerCase()
@@ -52,7 +50,7 @@ const deleteUserFromChatList = (id, chat) => { //returns username of person that
 }
 
 const getUser = (id, chat) => {
-  console.log(`(getUser())===Searching ${id} inside ${chat}======`, users, chat, arr)
+  console.log(`(getUser())===Searching ${id} inside ${chat}======`, users, chat)
   console.log('List of Rooms: ')
   console.table(Object.keys(users))
   Object.keys(users).forEach(room => {
@@ -91,20 +89,14 @@ const getUsersInChat = (chat) => {
   else return false
 }
 
-const getLoginsList = (chat) => {
-  loginslist = []
-  users[chat].forEach(user => {
-    loginslist.push(user.login)
-  })
-  return loginslist
+const deleteChat = ({ chat, password }) => {
+  if (!users[chat]) return `Channel "${chat}" do not exist`
+  if ( password && password != chatPasswords[chat]) return `Password for "${chat}" do not match`
+  delete users[chat] //delete chat and users inside 
+  delete chatPasswords[chat] //delete password
+  delete chatUpdatedAt[chat] //delete date
 }
 
-const deleteChat = (chat) => {
-  if (!users[chat.chat]) return true
-  delete users[chat.chat] //delete room
-  delete chatPasswords[chat.chat] //delete room
-  delete chatUpdatedAt[chat.chat]
-}
 
 const getChats = () => {
   const roomlist = []
@@ -125,15 +117,17 @@ const getChats = () => {
       console.table([(Date.now() - chatUpdatedAt[room]) / (1000 * 60) > 3])
     }
   })
+  console.log('All USERS')
+  console.log(util.inspect(users, { showHidden: false, depth: null }))
+  console.table([users['ilikebigsockets']])
   console.log('All Chat Passwords')
   console.table(util.inspect(chatPasswords, { showHidden: false, depth: null }))
   console.log('Getting all chatrooms')
   console.table([roomlist])
-  return {roomlist, roomDeleted}
+  return { roomlist, roomDeleted }
 }
 
 const verifyChatPassword = ({ adminpw, chat }) => chatPasswords[chat] == adminpw
-const verifyChatUpdated = ({ adminpw, chat }) => chatUpdatedAt[chat] == adminpw // à modifier <=============================
 const verifyIfChatExists = (chat) => Object.keys(users).includes(chat) ? true : false //if chat exists, true => continue, if not, false => redirect to homepage
 const updateChatDate = (chat) => chatUpdatedAt[chat].push(Date.now())
 
@@ -164,5 +158,6 @@ module.exports = {
   addUser, deleteUserFromChatList, getUser,
   getLoginsInChat, changeChatName, getChats,
   verifyChatPassword, verifyIfChatExists,
-  createChat, deleteChat, updateChatDate, getUsersInChat
+  createChat, deleteChat, updateChatDate,
+  getUsersInChat,
 }

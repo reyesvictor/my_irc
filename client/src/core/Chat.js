@@ -20,17 +20,18 @@ let socket
 const Chat = ({ location }) => {
   const [adminpw, setAdminpw] = useState()
   const [newChat, setNewChat] = useState()
+  const [newLogin, setNewLogin] = useState()
   const [adminaccess, setAdminaccess] = useState()
   const [logins, setLogins] = useState([])
   const [login, setLogin] = useState()
   const [chat, setChat] = useState('')
+  const [chats, setChats] = useState([])
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState([])
   const ENDPOINT = process.env.REACT_APP_API
 
   //For Users
   useEffect(async () => {
-
     const config = {
       headers: {
         "Content-type": "application/json"
@@ -41,10 +42,19 @@ const Chat = ({ location }) => {
         toast.success('url is good')
         const { login, chat } = queryStr.parse(location.search)
         socket = io(ENDPOINT)
-        setLogin(login)
-        setChat(chat.trim().toLowerCase())
-        socket.emit('join', { login, chat }, () => {
+        socket.emit('join', { login, chat }, async ({ chats }) => {
+          setLogin(login)
+          setChat(chat.trim().toLowerCase())
+          await setChats(chats)
         })
+
+        //Message to All Chats
+        socket.on('messageToAllChats', (message) => { // {user, text}
+          setMessages(messages => [...messages, message])
+          const chatMessages = document.querySelector('.chat-1')
+          chatMessages.scrollTop = chatMessages.scrollHeight
+        })
+
 
         //For Messages
         socket.on('message', (data) => {
@@ -57,12 +67,22 @@ const Chat = ({ location }) => {
           }
         })
 
+        //For Private Messages
+        socket.on('getPrivateMessage', (data) => {
+          let { user, text } = data
+          user = user + " by Private message"
+          const message = { user, text }
+          setMessages(messages => [...messages, message])
+          const chatMessages = document.querySelector('.chat-1')
+          chatMessages.scrollTop = chatMessages.scrollHeight
+        })
+
         socket.on('roomIsDeletedGetOut', (room) => {
           if (room == chat) {
             toast.info('The chat was deleted because of inactivity ! You\'ll be redirected to the homepage. BYE !', { position: 'top-center' })
             setTimeout(function () {
               window.location = `/`
-            }, 5000);
+            }, 5000)
           }
         })
 
@@ -70,6 +90,10 @@ const Chat = ({ location }) => {
           if (socket.id == data) {
             window.location = '/'
           }
+        })
+
+        socket.on('refreshChatsList', (newChatsList) => {
+          setChats(newChatsList)
         })
 
         socket.on('chatData', (data) => {
@@ -89,14 +113,13 @@ const Chat = ({ location }) => {
         socket.on('redirectToIndex', (data) => {
           const { oldChat } = data
           if (oldChat == chat) {
-            document.getElementById("messageBox").disabled = true;
+            document.getElementById("messageBox").disabled = true
             toast.info('The Chat was deleted. You\'ll be redirected to the homepage. BYE BYE !', { position: 'top-center' })
             setTimeout(function () {
               window.location = `/`
-            }, 5000);
+            }, 5000)
           }
         })
-
         return () => {
           socket.emit('disconnect')
           socket.off()
@@ -118,20 +141,95 @@ const Chat = ({ location }) => {
     })
   }
 
+  const changeNick = (nick) => {
+    if (logins.includes(nick)) {
+      toast.error('This username is already taken', { position: 'top-center' })
+    }
+    else if (/^[a-zA-Z]+$/.test(nick) && nick.length < 20 && nick.length > 2) {
+      socket.emit('changeNickname', { chat: chat, oldLogin: login, newLogin: nick })
+      window.location = `/chat?login=${nick}&chat=${chat}`
+    }
+    else {
+      toast.error('Wsh, only A-Z and a-z and between 5 and 20 characters !', { position: 'top-center' })
+    }
+  }
+
+  const addToNavBar = (chat, newLogin) => {
+    var li = document.createElement('li')
+    li.classList = "nav-item"
+    var link = document.createElement("a");
+    var linkText = document.createTextNode(chat);
+    link.appendChild(linkText);
+    link.title = message[1];
+    link.classList = "nav-link"
+    link.target = "_blank"
+    link.style = "cursor: pointer; color: rgb(255, 255, 255);"
+    link.href = `/chat?login=${newLogin}&chat=${chat}`;
+    li.appendChild(link)
+    document.getElementById("navbar").appendChild(li)
+  }
+
   const parseCommands = async (message) => {
     message = message.split(' ')
     switch (message[0]) {
       case '/part':
         socket.emit('disconnectFromChannel', message[1])
+        break
+      case '/join':
+        if (message[1] && message[2]) {
+          addToNavBar(message[1], message[2])
+        }
         break;
-      case '/nick':
-        if (logins.includes(message[1])) {
-          toast.error('This username is already taken', { position: 'top-center' })
+      case '/msg':
+        if (message[1] && message[2]) {
+          let sendTo = message[1]
+          let cleanMessage = message.slice(2)
+          let messageSent = cleanMessage.join(" ")
+          let showMeMyMessage = { user: login, text: messageSent }
+          socket.emit('privatemsg', { chat, sendTo, messageSent })
+          await setMessages(messages => [...messages, showMeMyMessage])
+          let chatMessages = document.querySelector('.chat-1')
+          chatMessages.scrollTop = chatMessages.scrollHeight
         }
         else {
-          window.location = `/chat?login=${message[1]}&chat=${chat}`
+          toast.error('Please make sure to follow the template /msg [USER] [MESSAGE]', { position: 'top-center' })
         }
-        break;
+        break
+      case '/nick':
+        if ( message[1] ) {
+          changeNick(message[1])
+        } else {
+          toast.error('You need to enter a new name /nick [newlogin]', {position: 'top-center'})
+        }
+        break
+      case '/create':
+        if (!message[1] || !message[2]) {
+          toast.error("To create you need the chat name and password", { position: 'top-center' })
+          toast.error("/create [CHAT] [PASSWORD]", { position: 'top-center' })
+        } else {
+          socket.emit('createNewChat', ({ chat: message[1], password: message[2] }), async function ({ error }) {
+            if (error) {
+              toast.error(error, { position: 'top-center' })
+            } else {
+              setChats([...chats, message[1]])
+            }
+          })
+        }
+        break
+      case '/delete':
+        if (!message[1] || !message[2]) {
+          toast.error("To delete you need the chat name and password", { position: 'top-center' })
+          toast.error("/delete [CHAT] [PASSWORD]", { position: 'top-center' })
+        } else {
+          socket.emit('deleteChatByTerminal', { chat: message[1], password: message[2].trim() }, ({ error, newChatsList }) => {
+            if (error) {
+              toast.error(error, { position: 'top-center' })
+            } else {
+              setChats(newChatsList)
+            }
+          })
+        }
+        break
       case '/list':
         let test = await getChatlist()
         let chatList = { user: 'admin', text: 'List of chats: ' }
@@ -149,7 +247,7 @@ const Chat = ({ location }) => {
         setMessages(messages => [...messages, chatList])
         let chatMessages = document.querySelector('.chat-1')
         chatMessages.scrollTop = chatMessages.scrollHeight
-        break;
+        break
       case '/users':
         let userList = { user: 'admin', text: 'List of users: ' }
         logins.map(function (login) {
@@ -163,10 +261,10 @@ const Chat = ({ location }) => {
         let el = document.getElementsByClassName('members-panel-1')[0]
         let ofs = 0
         window.setInterval(function () {
-          el.style.background = 'rgba(255,0,0,' + Math.abs(Math.sin(ofs)) + ')';
-          ofs += 0.01;
-        }, 10);
-        break;
+          el.style.background = 'rgba(255,0,0,' + Math.abs(Math.sin(ofs)) + ')'
+          ofs += 0.01
+        }, 10)
+        break
       default:
         toast.error('This command does not exist', { position: 'top-center' })
     }
@@ -199,42 +297,66 @@ const Chat = ({ location }) => {
   const changeChatName = () => {
     if (newChat == '' || !newChat) {
       toast.error('Missing new chat name')
-      return false;
-    } else {
-      socket.emit('changeChatNameInServer', { newChat, oldChat: chat }, function ({ error, oldChat }) {
+      return false
+    } else if (newChat == chat) {
+      toast.error('This is the actual name')
+    }
+    else {
+      socket.emit('changeChatNameInServer', { newChat, oldChat: chat }, function ({ error, chats }) {
         if (error) { //fail at changing, probably the oldChat name  doest exist
           toast.error(error, { position: 'top-left' })
+        } else {
+          setChats(chats)
         }
       })
     }
   }
 
   const deleteChatroom = () => {
-    socket.emit('deleteChat', { chat }, function (isChatDeleted) {
-      if (isChatDeleted) { //true == no bcoz it doesnt exist
+    socket.emit('deleteChat', { chat }, function ({ chatIsNotDeleted, newChatsList }) {
+      if (chatIsNotDeleted) { //true == no bcoz it doesnt exist
         toast.error('Chat doesnt exist !', { position: 'top-left' })
+      }
+      if (newChatsList) {
+        setChats(newChatsList)
       }
     })
   }
 
   const adminAccess = () => (
     <div>
-      {adminaccess ?
-        <div className="m-1 p-1" >
-          <div className="m-1 p-1 card" style={{ width: 200 + 'px' }}>
-            <label htmlFor="newChat">New name:</label><br></br>
-            <input onChange={e => setNewChat(e.target.value)} id="newChat" type="text"></input><br></br>
-            <button className="btn btn-primary p-2 m-2" onClick={() => changeChatName()}>Change Name</button>
-            <button className="btn btn-danger p-2 m-2" onClick={() => deleteChatroom()}>Delete Chatroom</button>
-          </div>
-        </div>
-        :
-        <div className="m-2 p-2 card" style={{ width: 200 + 'px' }}>
-          <label htmlFor="adminpw">Access code:</label><br></br>
-          <input className="mb-2" onChange={e => setAdminpw(e.target.value)} id="adminpw" type="password"></input><br></br>
-          <button className="m-2 p-2" className="btn btn-primary" onClick={() => checkAdmin()}>Admin access</button>
-        </div>
-      }
+      <table>
+        <tr>
+          <td>
+            {adminaccess ?
+              <div className="m-1 p-1" >
+                <div className="m-1 p-1 card" style={{ width: 200 + 'px' }}>
+                  <label htmlFor="newChat">New name:</label><br></br>
+                  <input onChange={e => setNewChat(e.target.value)} id="newChat" type="text"></input><br></br>
+                  <button className="btn btn-primary p-2 m-2" onClick={() => changeChatName()}>Change Name</button>
+                  <button className="btn btn-danger p-2 m-2" onClick={() => deleteChatroom()}>Delete Chatroom</button>
+                </div>
+              </div>
+              :
+              <div className="m-2 p-2 card" style={{ width: 200 + 'px' }}>
+                <label htmlFor="adminpw">Access code:</label><br></br>
+                <input className="mb-2" onChange={e => setAdminpw(e.target.value)} id="adminpw" type="password"></input><br></br>
+                <button className="m-2 p-2" className="btn btn-primary" onClick={() => checkAdmin()}>Admin access</button>
+              </div>
+            }
+          </td>
+          <td>
+            <div className="m-1 p-1" >
+              <div className="m-1 p-1 card" style={{ width: 200 + 'px' }}>
+                <label htmlFor="newLogin">New username:</label><br></br>
+                <input onChange={e => setNewLogin(e.target.value)} id="newLogin" type="text"></input><br></br>
+                <button className="btn btn-primary p-2 m-2" onClick={() => changeNick(newLogin)}>Change username</button>
+              </div>
+            </div>
+          </td>
+        </tr>
+
+      </table>
     </div>
   )
 
@@ -243,8 +365,8 @@ const Chat = ({ location }) => {
       <div className="card-body">
         <div className="row px-lg-2 px-2">
           <div className="col-md-12 col-xl-4 px-0">
-            <h6 className="font-weight-bold mb-3 text-center text-lg-left">Members</h6>
             <div className="white z-depth-1 px-2 pt-3 pb-0 members-panel-1 scrollbar-light-blue">
+              <h6 className="font-weight-bold mb-3 text-center text-lg-left">Members</h6>
               <ul className="list-unstyled friend-list">
                 {logins && logins.length > 0 ?
                   logins.map(function (login, i) {
@@ -259,6 +381,22 @@ const Chat = ({ location }) => {
                   : null
                 }
               </ul>
+
+              <h6 className="font-weight-bold mb-3 text-center text-lg-left">Chats</h6>
+              <ul className="list-unstyled friend-list">
+                {chats && chats.length > 0 ?
+                  chats.map(function (room, i) {
+                    return <li key={i + '-chat'} className="active grey lighten-3 p-2 border border-info">
+                      <a href="#" className="d-flex justify-content-between">
+                        <div className="text-small text-primary">
+                          <strong>{room}</strong>
+                        </div>
+                      </a>
+                    </li>
+                  })
+                  : null
+                }
+              </ul>
             </div>
           </div>
           <div className="col-md-6 col-xl-8 pl-md-3 px-lg-auto px-0">
@@ -266,18 +404,15 @@ const Chat = ({ location }) => {
               <ul className="list-unstyled chat-1 scrollbar-light-blue">
                 {messages && messages.length > 0 ?
                   messages.map(function (message, i) {
-                    return <li key={i + "-message"} className={getClass1(message)} style={{ width: 100 + '%', height: 90 + 'px' }}>
-                      <div className={message.user === login.trim().toLowerCase() ?
-                        "chat-body white p-1 pb-3 pl-2 pr-2  ml-3 z-depth-1 bg-dark text-white border rounded-lg"
-                        :
-                        "chat-body white p-1 pb-3 pl-2 pr-2 ml-3 z-depth-1 bg-light text-black border rounded-lg"
-                      } style={{ width: "fit-content" }}>
+                    return <li key={i + "-message"} className={getClassListItem(message)} style={{ width: 100 + '%', height: "fit-content" }}>
+                      <div className={getClassDivCardItem(message)} style={{ width: "fit-content", height: "fit-content" }}>
                         <div className="header" style={{ height: 10 + 'px' }}>
                           <strong className="primary-font">{message.user}</strong>
                         </div>
                         <hr className="w-100" />
                         <p className="mb-0">
-                          {message.text}</p>
+                          {message.text}
+                        </p>
                       </div>
                     </li>
                   })
@@ -297,12 +432,16 @@ const Chat = ({ location }) => {
     </div>
   )
 
-  const getClass1 = (message) => {
-    if (message.user === login.trim().toLowerCase()) {
-      return "d-flex flex-row-reverse justify-content-between mb-1 pr-3"
-    } else {
-      return "d-flex justify-content-between mb-1 pr-3"
-    }
+  const getClassListItem = (message) => {
+    if (message.user === 'admin') return "d-flex justify-content-center mx-auto mb-1 pr-3 text-center" //admin
+    else if (message.user === login.trim().toLowerCase()) return "d-flex flex-row-reverse justify-content-between mb-1 pr-3" //user connected
+    else return "d-flex justify-content-between mb-1 pr-3" //another user
+  }
+
+  const getClassDivCardItem = (message) => {
+    if (message.user === 'admin') return "justify-content-center text-center chat-body white p-1 pb-3 pl-2 pr-2 ml-3 z-depth-1 bg-light text-black border rounded-lg"
+    else if (message.user === login.trim().toLowerCase()) return "chat-body white p-1 pb-3 pl-2 pr-2  ml-3 z-depth-1 bg-dark text-white border rounded-lg"
+    else return "chat-body white p-1 pb-3 pl-2 pr-2 ml-3 z-depth-1 bg-light text-black border rounded-lg"
   }
 
   return (
@@ -312,7 +451,10 @@ const Chat = ({ location }) => {
         <div className='mx-auto col-12'>
           <div className='card mt-2'>
             <div className='card'>
-              <h1 className='card-title p-1 text-center'>'{chat}' Chat Room</h1>
+              <h1 className='card-title p-1 text-center inline-block'>
+                '{chat}' Chat Room
+                <a href="/" className="btn btn-info m-2" style={{ width: 200 + 'px' }} >Leave chatroom</a>
+              </h1>
               {adminAccess()}
             </div>
           </div>

@@ -2,7 +2,7 @@ const express = require("express")
 const router = express.Router()
 const Chat = require('./chatModel')
 const sha1 = require('sha1')
-const {verifyIfChatExists } = require('./chatController')
+const { verifyIfChatExists, getLoginsInChat } = require('./chatController')
 
 
 router.post('/', (req, res) => {
@@ -40,8 +40,6 @@ router.get('/', (req, res) => {
         .then(res => console.log(res))
     Chat.find()
         .then(chats => {
-            // do a filter of over 2 weeks
-            // then map it to delete it from the database
             res.json(chats)
         })
 })
@@ -102,14 +100,19 @@ router.post('/verifyURL', (req, res) => {
     const { search } = req.body.location
     console.log(search)
     const chat = search.split('/').reverse()[0].split('=').reverse()[0]
+    const login = search.split('/').reverse()[0].split('=').reverse()[1].split('&')[0]
     //verifier si chat existe. sinon redirect.
-    if ( verifyIfChatExists(chat) ) { // true == chat exist, all ok
-        return res.status(200).json({msg:'EVERYTHING OK'});
+    if (verifyIfChatExists(chat)) { // true == chat exist, all ok
+        if (!getLoginsInChat(chat).includes(login)) {
+            return res.status(200).json({ msg: 'EVERYTHING OK' });
+        }
+        else {
+            return res.status(400).json({ error: 'THIS USER IS ALREADY TAKEN' });
+        }
     } else { // chat does not exist
-        return res.status(400).json({error:'WRONG URL'});
+        return res.status(400).json({ error: 'WRONG URL' });
     }
-    console.log('routerget_____________________________________________________________\n')
-  })
+})
 
 
 module.exports = router
