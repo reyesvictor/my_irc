@@ -37,7 +37,7 @@ const Chat = ({ location }) => {
         "Content-type": "application/json"
       }
     }
-    await axios.post('http://127.0.0.1:4141/chat/verifyURL', { location }, config)
+    await axios.post(`${process.env.REACT_APP_API}/chat/verifyURL`, { location }, config)
       .then(res => {
         toast.success('url is good')
         const { login, chat } = queryStr.parse(location.search)

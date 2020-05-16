@@ -97,7 +97,7 @@ const Home = ({ match, location }) => {
       <div className="form-group">
         <label htmlFor="exampleInputEmail1">Room Name</label>
         <input type="text" className="form-control" id="exampleInputEmail1" aria-describedby="roomHelp" name="title" placeholder="Enter Room Name" onChange={e => setChat(e.target.value)} />
-        <small id="emailHelp" className="form-text text-muted">Gas Chamber is not allowed as a name. Only letters from A to Z.</small>
+        <small id="emailHelp" className="form-text text-muted">Only letters from A to Z.</small>
       </div>
       <div className="form-group">
         <label htmlFor="exampleInputPassword1">Password</label>
