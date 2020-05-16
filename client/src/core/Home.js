@@ -72,28 +72,29 @@ const Home = ({ match, location }) => {
     <form>
       <div className="form-group">
         <label htmlFor="exampleInputEmail1">Login</label>
-        <input type="text" className="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Enter login" onChange={e => setLogin(e.target.value)} />
+        <input type="text" className="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" onKeyPress={e => e.key === 'Enter' ? verifyBeforeJoinChannel(e) : null} placeholder="Enter login" onChange={e => setLogin(e.target.value)} />
         <small id="emailHelp" className="form-text text-muted">Choose wisely young kek.</small>
       </div>
       <select className="form-control" onChange={e => e.target.value && e.target.value !== "" ? setChat(e.target.value) : null}>
         <option value="">Choose one</option>
         {chats ? chats.map((chat) => <option key={chat} value={chat}>{chat}</option>) : null}
       </select>
-      <span className="btn btn-success mt-2" onClick={
-        async function (e) {
-          const canIFinallyGoIN = await checkIfUserExists()
-          if (login && chat && canIFinallyGoIN) {
-            redirectIfValid()
-          }
-          else {
-            toast.error("Parameters are wrong, change login or choose a chatroom", { position: 'top-center' })
-          }
-        }}
-      >
+      <span className="btn btn-success mt-2" onClick={e => verifyBeforeJoinChannel()}>
         Join
       </span>
     </form>
   )
+
+  const verifyBeforeJoinChannel = async (e) => {
+    e.preventDefault()
+    const canIFinallyGoIN = await checkIfUserExists()
+    if (login && chat && canIFinallyGoIN) {
+      redirectIfValid()
+    }
+    else {
+      toast.error("Parameters are wrong, change login or choose a chatroom", { position: 'top-center' })
+    } 
+  }
 
   const createForm = () => (
     <form>

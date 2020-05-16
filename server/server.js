@@ -8,7 +8,7 @@ const path = require("path")
 const http = require("http")
 const socketio = require("socket.io")
 const server = http.createServer(app)
-const mongoose = require('mongoose')
+// const mongoose = require('mongoose')
 const io = socketio(server)
 const { addUser, deleteUserFromChatList, getUser, getLoginsInChat,
   changeChatName, getChats, verifyChatPassword, createChat,
@@ -31,10 +31,10 @@ app.use(function (req, res, next) {
   next()
 })
 
-mongoose
-  .connect("mongodb://127.0.0.1:27042/my_irc", { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("DB Connected"))
-  .catch((err) => console.log("DB CONNECTION FAIL :", err))
+// mongoose
+//   .connect("mongodb://127.0.0.1:27042/my_irc", { useNewUrlParser: true, useUnifiedTopology: true })
+//   .then(() => console.log("DB Connected"))
+//   .catch((err) => console.log("DB CONNECTION FAIL :", err))
 
 io.on('connect', (socket) => {
   console.log('\n\nconnect Begin_________________________________________________________________')

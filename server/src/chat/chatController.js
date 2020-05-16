@@ -115,8 +115,14 @@ const getChats = () => {
       delete chatPasswords[room]
       delete chatUpdatedAt[room]
       roomDeleted.push(room)
+      console.log('Getting all chatrooms that wil be deleted')
+      console.table([(Date.now() - chatUpdatedAt[room]) / (1000 * 60)])
+      console.table([(Date.now() - chatUpdatedAt[room]) / (1000 * 60) > 3])
     } else {
       roomlist.push(room)
+      console.log('Getting all chatrooms that wil be deleted')
+      console.table([(Date.now() - chatUpdatedAt[room]) / (1000 * 60)])
+      console.table([(Date.now() - chatUpdatedAt[room]) / (1000 * 60) > 3])
     }
   })
   console.log('All Chat Passwords')
