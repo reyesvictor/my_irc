@@ -173,7 +173,11 @@ const Chat = ({ location }) => {
     message = message.split(' ')
     switch (message[0]) {
       case '/part':
-        socket.emit('disconnectFromChannel', message[1])
+        if ( !message[1]) {
+          toast.error('Youneed to locate where you want to be disconnected. /part [ROOM]', { position: 'top-center' })
+        } else{
+          socket.emit('disconnectFromChannel', message[1])
+        }
         break
       case '/join':
         if (message[1] && message[2]) {
@@ -387,7 +391,7 @@ const Chat = ({ location }) => {
                 {chats && chats.length > 0 ?
                   chats.map(function (room, i) {
                     return <li key={i + '-chat'} className="active grey lighten-3 p-2 border border-info">
-                      <a href="#" className="d-flex justify-content-between">
+                      <a href={`/chat?login=${login}&chat=${room}`} className="d-flex justify-content-between">
                         <div className="text-small text-primary">
                           <strong>{room}</strong>
                         </div>
@@ -422,7 +426,7 @@ const Chat = ({ location }) => {
               <div className="white">
                 <div className="form-group basic-textarea">
                   <textarea id="messageBox" onKeyPress={e => e.key === 'Enter' ? sendMessage(e) : null}
-                    className="form-control pl-2 my-0" rows="3" placeholder="Enter your message"></textarea>
+                    className="form-control pl-2 my-0" rows="3" placeholder="Enter a message. Pro tip: Send a private message by typing /msg <username> <message>"></textarea>
                 </div>
               </div>
             </div>
