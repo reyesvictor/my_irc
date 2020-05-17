@@ -2,6 +2,7 @@
 
 ### TEAM WORK
 En collaboration avec [Antonio Tina](https://github.com/antoniotina) : [https://github.com/antoniotina](https://github.com/antoniotina)
+Project en ligne disponible ici : [my_irc | chat en ligne](https://reverent-hopper-3054e4.netlify.app/)
 
 
 ### RESTRICTIONS
