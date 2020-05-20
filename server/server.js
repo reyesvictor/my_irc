@@ -34,6 +34,7 @@ io.on('connect', (socket) => {
   console.log('\n\nconnect Begin_________________________________________________________________')
   console.log('User is connected')
   const { roomlist, roomDeleted } = getChats()
+  io.emit('refreshChatsList', roomlist)
   if (roomDeleted.length) {
     roomDeleted.map(room => io.emit('roomIsDeletedGetOut', room).emit('messageToAllChats', { user: 'admin', text: `The chat "${room}" is now deleted. Press F.` })) //success
   }
@@ -43,15 +44,15 @@ io.on('connect', (socket) => {
   socket.on('doesUserExist',
     function (data, fn) {
       console.log('\n\ndoesUserExist Begin_________________________________________________________________')
-      const { login, chat } = data
+      let { login, chat } = data
+      login = login.trim().toLowerCase()
       console.table([data, login, chat])
       usersInChat = getLoginsInChat(chat)
       console.table(usersInChat)
-      if (usersInChat == false) {
-        fn(true)
-      }
-      else if ((usersInChat && usersInChat.includes(login))) {
+      if ((usersInChat && usersInChat.includes(login) || login == 'admin')) {
         fn(false)
+      } else if (usersInChat == false) {
+        fn(true)
       }
       else {
         fn(true)
@@ -66,7 +67,7 @@ io.on('connect', (socket) => {
     console.log(ourUser)
     io.to(ourUser.id).emit('getPrivateMessage', { user: socket.login, text: messageSent })
   })
-  
+
   socket.on('getChatlist',
     function (data, fn) {
       const { roomlist, roomDeleted } = getChats()
@@ -88,10 +89,10 @@ io.on('connect', (socket) => {
   })
 
   socket.on('deleteChat', ({ chat }, callback) => {
-    if (deleteChat({chat})) callback({chatIsNotDeleted:true}) //error
+    if (deleteChat({ chat })) callback({ chatIsNotDeleted: true }) //error
     else io.emit('redirectToIndex', { oldChat: chat }).emit('messageToAllChats', { user: 'admin', text: `The chat"${chat}" is now deleted. Press F.` }) //success
     const { roomlist, roomDeleted } = getChats()
-    callback({newChatsList:roomlist})
+    callback({ newChatsList: roomlist })
     io.emit('refreshChatsList', roomlist)
   })
 
@@ -99,7 +100,7 @@ io.on('connect', (socket) => {
     if (deleteChat({ chat, password })) callback(deleteChat({ chat, password })) // if error return error
     else io.emit('redirectToIndex', { oldChat: chat }).emit('messageToAllChats', { user: 'admin', text: `The chat"${chat}" is now deleted. Press F.` }) //success
     const { roomlist, roomDeleted } = getChats()
-    callback({newChatsList:roomlist})
+    callback({ newChatsList: roomlist })
     io.emit('refreshChatsList', roomlist)
   })
 
@@ -114,7 +115,7 @@ io.on('connect', (socket) => {
     socket.join(chat)
     io.emit('chatData', { chat: chat, users: getLoginsInChat(chat) })
     const { roomlist, roomDeleted } = await getChats()
-    callback({chats: roomlist}) //refresh chats list
+    callback({ chats: roomlist }) //refresh chats list
     io.emit('refreshChatsList', roomlist)
   })
 
@@ -129,11 +130,17 @@ io.on('connect', (socket) => {
     callback() //so we can work after in react
   })
 
-  socket.on('getChats', (callback) => {
-    getChats()
+  socket.on('changeNickname', ({ chat, oldLogin, newLogin }, callback) => {
+    console.log('______________changeNickname___________________')
+    newLogin = newLogin.trim().toLowerCase()
+    console.log(`Changing nickname ....... from   ${oldLogin}   to   ==> ${newLogin}  <===`)
+    if (newLogin == 'admin') {
+      callback({ error: 'You cant name yourself admin' })
+    } else {
+      socket.broadcast.emit('messageToAllChats', { user: 'admin', text: `"${oldLogin}" from "${chat}" chat is pseudofluid. His new name is "${newLogin}".` }) //success
+      callback({ error: false })
+    }
   })
-  socket.on('changeNickname', ({ chat, oldLogin, newLogin }) => 
-  socket.broadcast.emit('messageToAllChats', { user: 'admin', text: `"${oldLogin}" from "${chat}" chat is pseudofluid. His new name is "${newLogin}".` })) //success
 
   socket.on('changeChatNameInServer', (data, callback) => {
     const { oldChat, newChat } = data
@@ -145,7 +152,7 @@ io.on('connect', (socket) => {
       io.emit('getChatList', roomlist)
       socket.chat = newChat //update socket variable
       io.emit('changeChatNameInPage', data)
-      callback({chats: roomlist}) //refresh chats list
+      callback({ chats: roomlist }) //refresh chats list
     } else { //fail
       callback({ error: 'Old Chat Name Does Not Exist' })
     }

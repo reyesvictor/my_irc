@@ -1,6 +1,6 @@
 const util = require('util')
 let users = {}
-const defaultChats = ['ilikebigsockets', 'autodeletein3minutes']
+const defaultChats = ['ilikebigsockets', 'autodeletein3minutes', 'hiremeplease']
 const chatPasswords = {}
 const chatUpdatedAt = {}
 const date = Date.now()
@@ -91,18 +91,17 @@ const getUsersInChat = (chat) => {
 
 const deleteChat = ({ chat, password }) => {
   if (!users[chat]) return `Channel "${chat}" do not exist`
-  if ( password && password != chatPasswords[chat]) return `Password for "${chat}" do not match`
+  if (password && password != chatPasswords[chat]) return `Password for "${chat}" do not match`
   delete users[chat] //delete chat and users inside 
   delete chatPasswords[chat] //delete password
   delete chatUpdatedAt[chat] //delete date
 }
 
-
 const getChats = () => {
   const roomlist = []
   const roomDeleted = []
   Object.keys(users).forEach(room => {
-    if ((Date.now() - chatUpdatedAt[room]) / (1000 * 60) > 3) { //if innactive for more than 3 min, delete
+    if (((Date.now() - chatUpdatedAt[room]) / (1000 * 60) > 3) && room != 'hiremeplease') { //if innactive for more than 3 min, delete
       delete users[room]
       delete chatPasswords[room]
       delete chatUpdatedAt[room]

@@ -1,31 +1,31 @@
-import React, { useState, useEffect, Fragment } from "react";
-import Layout from "./Layout";
+import React, { useState, useEffect, Fragment } from "react"
+import Layout from "./Layout"
 import io from 'socket.io-client'
-import Modal from "react-modal";
-import ReactDOM from "react-dom";
-import { Link, Redirect } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
+import Modal from "react-modal"
+import ReactDOM from "react-dom"
+import { Link, Redirect } from "react-router-dom"
+import { ToastContainer, toast } from "react-toastify"
 import { Button } from 'reactstrap'
-import "react-toastify/dist/ReactToastify.min.css";
+import "react-toastify/dist/ReactToastify.min.css"
 import axios from 'axios'
 
 let socket
 
 const Home = ({ match, location }) => {
-  const [isLoaded, setIsLoaded] = React.useState(false);
-  const [chats, setChats] = useState();
-  const [login, setLogin] = useState();
-  const [chat, setChat] = useState();
-  const [password, setPassword] = useState();
-  const [joinModalState, setJoinModalState] = useState(false);
-  const [createModalState, setCreateModalState] = useState(false);
+  const [isLoaded, setIsLoaded] = React.useState(false)
+  const [chats, setChats] = useState()
+  const [login, setLogin] = useState()
+  const [chat, setChat] = useState()
+  const [password, setPassword] = useState()
+  const [joinModalState, setJoinModalState] = useState(false)
+  const [createModalState, setCreateModalState] = useState(false)
   const ENDPOINT = process.env.REACT_APP_API
 
   useEffect(() => {
     socket = io(ENDPOINT)
     //recuperer la liste
     socket.on('getChatList', async (chats) => {
-      setIsLoaded(true);
+      setIsLoaded(true)
       await setChats(chats)
     })
     //trouver ou envoyer le mdp et lenregisteer
@@ -56,17 +56,17 @@ const Home = ({ match, location }) => {
   }
 
   const redirectIfValid = () => {
-    window.location = `/chat?login=${login.trim().toLowerCase()}&chat=${chat.trim().toLowerCase()}`
+    window.location = `/chat?login=${login}&chat=${chat}`
   }
 
   const joinForm = () => (
     <form>
       <div className="form-group">
         <label htmlFor="exampleInputEmail1">Login</label>
-        <input type="text" className="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" onKeyPress={e => e.key === 'Enter' ? verifyBeforeJoinChannel(e) : null} placeholder="Enter login" onChange={e => setLogin(e.target.value)} />
+        <input type="text" className="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" onKeyPress={e => e.key === 'Enter' ? verifyBeforeJoinChannel(e) : null} placeholder="Enter login" onChange={e => setLogin(e.target.value.trim().toLowerCase())} />
         <small id="emailHelp" className="form-text text-muted">Choose wisely young kek.</small>
       </div>
-      <select className="form-control" onChange={e => e.target.value && e.target.value !== "" ? setChat(e.target.value) : null}>
+      <select className="form-control" onChange={e => e.target.value.trim().toLowerCase() && e.target.value.trim().toLowerCase() !== "" ? setChat(e.target.value.trim().toLowerCase()) : null}>
         <option value="">Choose one</option>
         {chats ? chats.map((chat) => <option key={chat} value={chat}>{chat}</option>) : null}
       </select>
@@ -78,33 +78,35 @@ const Home = ({ match, location }) => {
 
   const verifyBeforeJoinChannel = async (e) => {
     e.preventDefault()
+    if (login.trim().toLowerCase() == 'admin') return toast.error('You cant be called admin !')
     const canIFinallyGoIN = await checkIfUserExists()
     if (login && chat && canIFinallyGoIN) {
       redirectIfValid()
     }
     else {
-      toast.error("Parameters are wrong, change login or choose a chatroom", { position: 'top-center' })
-    } 
+      toast.error("Parameters are wrong, change login or choose a chatroom")
+    }
   }
 
   const createForm = () => (
     <form>
       <div className="form-group">
         <label htmlFor="exampleInputEmail1">User Login</label>
-        <input type="text" className="form-control" id="exampleInputEmail1" aria-describedby="loginHelp" placeholder="Enter Login" onChange={e => setLogin(e.target.value)} />
+        <input type="text" className="form-control" id="exampleInputEmail1" aria-describedby="loginHelp" placeholder="Enter Login" onChange={e => setLogin(e.target.value.trim().toLowerCase())} />
         <small id="emailHelp" className="form-text text-muted">Choose wisely young kek.</small>
       </div>
       <div className="form-group">
         <label htmlFor="exampleInputEmail1">Room Name</label>
-        <input type="text" className="form-control" id="exampleInputEmail1" aria-describedby="roomHelp" name="title" placeholder="Enter Room Name" onChange={e => setChat(e.target.value)} />
+        <input type="text" className="form-control" id="exampleInputEmail1" aria-describedby="roomHelp" name="title" placeholder="Enter Room Name" onChange={e => setChat(e.target.value.trim().toLowerCase())} />
         <small id="emailHelp" className="form-text text-muted">Only letters from A to Z.</small>
       </div>
       <div className="form-group">
         <label htmlFor="exampleInputPassword1">Password</label>
-        <input type="password" className="form-control" id="exampleInputPassword1" placeholder="Enter Complex Password" name="password" onChange={e => setPassword(e.target.value)} />
+        <input type="password" className="form-control" id="exampleInputPassword1" placeholder="Enter Complex Password" name="password" onChange={e => setPassword(e.target.value.trim().toLowerCase())} />
         <small id="emailHelp" className="form-text text-muted">This password is crucial, only with the password you can delete the room.</small>
       </div>
       <Button onClick={function (e) {
+        if (login.trim().toLowerCase() == 'admin') return toast.error('You cant be called admin !')
         if (login && chat && password && /^[a-zA-Z]+$/.test(chat)) {
           onSubmit()
         }
@@ -139,7 +141,7 @@ const Home = ({ match, location }) => {
 
   const comp = (variable) => (
     <div className="row">
-      <div className="mx-auto col-6">
+      <div className="mx-auto">
         <div className="card mt-2">
           <div className="card-body">
             <h2 className="card-title text-center">{variable} Room</h2>
@@ -160,7 +162,7 @@ const Home = ({ match, location }) => {
       {comp('Join')}
       {comp('Create')}
     </Layout>
-  );
+  )
 }
 
-export default Home;
+export default Home

@@ -4,7 +4,6 @@ const Chat = require('./chatModel')
 const sha1 = require('sha1')
 const { verifyIfChatExists, getLoginsInChat } = require('./chatController')
 
-
 router.post('/', (req, res) => {
     const { password, chat } = req.body
     const title = chat
@@ -46,7 +45,6 @@ router.get('/', (req, res) => {
 
 router.post('/changename', (req, res) => {
     console.log('0 changename__________________________________')
-
     const { newchat, chat } = req.body
     const oldChat = chat
     console.log('1__________________________________')
@@ -73,9 +71,7 @@ router.post('/changename', (req, res) => {
 })
 
 router.post('/deletechat', (req, res) => {
-
     const { chat } = req.body
-
     if (!chat) {
         return res.status(400).json({ error: 'Please enter all fields' })
     }
@@ -100,19 +96,11 @@ router.post('/verifyURL', (req, res) => {
     const { search } = req.body.location
     console.log(search)
     const chat = search.split('/').reverse()[0].split('=').reverse()[0]
-    const login = search.split('/').reverse()[0].split('=').reverse()[1].split('&')[0]
+    const login = search.split('/').reverse()[0].split('=').reverse()[1].split('&')[0].trim().toLowerCase()
     //verifier si chat existe. sinon redirect.
-    if (verifyIfChatExists(chat)) { // true == chat exist, all ok
-        if (!getLoginsInChat(chat).includes(login)) {
-            return res.status(200).json({ msg: 'EVERYTHING OK' });
-        }
-        else {
-            return res.status(400).json({ error: 'THIS USER IS ALREADY TAKEN' });
-        }
-    } else { // chat does not exist
-        return res.status(400).json({ error: 'WRONG URL' });
-    }
+    if (login.trim().toLowerCase() == 'admin') return res.status(400).json({ error: 'THIS USER IS ALREADY TAKEN' })
+    else if (verifyIfChatExists(chat)) getLoginsInChat(chat).includes(login) ? res.status(400).json({ error: 'THIS USER IS ALREADY TAKEN' }) : res.status(200).json({ msg: 'EVERYTHING OK' })     // true == chat exist, all ok
+    else return res.status(400).json({ error: 'WRONG URL' })    // chat does not exist
 })
-
 
 module.exports = router
