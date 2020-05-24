@@ -26,9 +26,7 @@
     "morgan": "^1.10.0",
     "node-port-check": "^2.0.1",
     "nodemon": "^2.0.3",
-    "sha1": "^1.1.1"
-  },
-  "devDependencies": {
+    "sha1": "^1.1.1",
     "dotenv": "^8.2.0",
     "eslint": "^6.8.0",
     "eslint-plugin-react": "^7.19.0",
