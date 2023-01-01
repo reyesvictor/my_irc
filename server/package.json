@@ -34,7 +34,7 @@
     "mongoose": "^5.9.13",
     "socket.io": "^2.3.0",
     "socketio": "^1.0.0",
-    "webpack": "^4.43.0",
+    "webpack": "^5.75.0",
     "webpack-hot-client": "^4.1.2"
   },
   "nodemonConfig": {
